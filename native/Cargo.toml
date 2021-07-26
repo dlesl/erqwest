@@ -1,0 +1,16 @@
+[package]
+name = "erqwest"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+name = "erqwest"
+path = "src/lib.rs"
+crate-type = ["dylib"]
+
+[dependencies]
+rustler = "0.22.0"
+rustler_codegen = "0.22.0"
+lazy_static = "1.0.0"
+reqwest = { version = "0.11" }
+tokio = { version = "1", features = ["full"] }
