@@ -51,12 +51,12 @@ make_client() ->
 
 -spec make_client(client_opts()) -> client().
 make_client(_Opts) ->
-  error(nif_not_loaded).
+  erlang:nif_error(nif_not_loaded).
 
 %% @doc Sends {erqwest_response, Ref, {ok, resp()} | {error, err()}} to Pid
 -spec req_async(client(), pid(), any(), req()) -> ok.
 req_async(_Client, _Pid, _Ref, _Req) ->
-  error(nif_not_loaded).
+  erlang:nif_error(nif_not_loaded).
 
 -spec req(client(), req()) -> {ok, resp()} | {error, err()}.
 req(Client, Req) ->
