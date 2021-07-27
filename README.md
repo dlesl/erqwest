@@ -3,7 +3,8 @@ erqwest
 
 An experimental erlang wrapper for
 [reqwest](https://github.com/seanmonstar/reqwest) using
-[rustler](https://github.com/rusterlium/rustler)
+[rustler](https://github.com/rusterlium/rustler). Map-based interface inspired
+by [katipo](https://github.com/puzza007/katipo).
 
 Use
 ---
@@ -27,3 +28,10 @@ $ rebar3 shell
            {<<"access-control-allow-credentials">>,<<"true">>}]}}
 
  ```
+
+Todo
+----
+
+* Shut down tokio event loop cleanly
+* Test thoroughly
+* Benchmark

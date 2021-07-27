@@ -12,5 +12,5 @@ crate-type = ["dylib"]
 rustler = "0.22.0"
 rustler_codegen = "0.22.0"
 lazy_static = "1.0.0"
-reqwest = { version = "0.11" }
-tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11", features = ["native-tls"] }
+tokio = { version = "1", features = ["rt-multi-thread", "sync"] }

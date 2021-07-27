@@ -1,20 +1,25 @@
+use reqwest::Identity;
 use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
 use rustler::{NifMap, NifUnitEnum, OwnedEnv, ResourceArc};
 use std::thread;
+use std::time::Duration;
 use tokio::runtime::{Handle, Runtime};
 
 mod atoms {
     rustler::atoms! {
-        erqwest_response,
         body,
-        url,
-        code,
+        status,
+        erqwest_response,
+        error,
+        follow_redirects,
         headers,
+        identity,
         method,
-        reason,
         ok,
-        error
+        reason,
+        timeout,
+        url
     }
 }
 
@@ -46,12 +51,6 @@ impl Into<reqwest::Method> for Method {
             Patch => reqwest::Method::PATCH,
         }
     }
-}
-
-#[derive(NifMap)]
-struct Req {
-    url: String,
-    method: Method,
 }
 
 #[derive(NifMap)]
@@ -101,9 +100,35 @@ lazy_static::lazy_static! {
 struct ClientResource(reqwest::Client);
 
 #[rustler::nif]
-fn make_client(env: Env) -> ResourceArc<ClientResource> {
+fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
     let _ = env;
-    ResourceArc::new(ClientResource(reqwest::Client::new()))
+    if !opts.is_map() {
+        return Err(rustler::Error::BadArg);
+    }
+    let mut builder = reqwest::ClientBuilder::new();
+    match opts.map_get(atoms::identity().encode(env)) {
+        Ok(term) => {
+            let (pkcs12, pass): (Binary, String) = term.decode()?;
+            builder = builder.identity(
+                Identity::from_pkcs12_der(pkcs12.as_slice(), &pass)
+                    .map_err(|_| rustler::Error::BadArg)?,
+            );
+        }
+        Err(_) => (),
+    };
+    let policy = match opts.map_get(atoms::follow_redirects().encode(env)) {
+        Ok(term) => match term.decode::<bool>() {
+            Ok(true) => Ok(reqwest::redirect::Policy::default()),
+            Ok(false) => Ok(reqwest::redirect::Policy::none()),
+            Err(_) => match term.decode::<usize>() {
+                Ok(n) => Ok(reqwest::redirect::Policy::limited(n)),
+                Err(_) => Err(rustler::Error::BadArg),
+            },
+        },
+        Err(_) => Ok(reqwest::redirect::Policy::none()),
+    }?;
+    builder = builder.redirect(policy);
+    Ok(ResourceArc::new(ClientResource(builder.build().unwrap())))
 }
 
 #[rustler::nif]
@@ -113,12 +138,10 @@ fn req_async(
     caller_ref: Term,
     req: Term,
 ) -> NifResult<Atom> {
-    let client = resource.0.clone();
-    let mut msg_env = OwnedEnv::new();
-    let caller_ref = msg_env.save(caller_ref);
     let env = req.get_env();
     let url: String = req.map_get(atoms::url().encode(env))?.decode()?;
     let method: Method = req.map_get(atoms::method().encode(env))?.decode()?;
+    let client = resource.0.clone();
     let mut req_builder = client.request(method.into(), url);
     match req.map_get(atoms::headers().encode(env)) {
         Ok(term) => {
@@ -135,18 +158,26 @@ fn req_async(
         }
         Err(_) => (),
     };
+    match req.map_get(atoms::timeout().encode(env)) {
+        Ok(term) => {
+            req_builder = req_builder.timeout(Duration::from_millis(term.decode()?));
+        }
+        Err(_) => (),
+    };
+    let mut msg_env = OwnedEnv::new();
+    let caller_ref = msg_env.save(caller_ref);
     HANDLE.spawn(async move {
         let resp = do_req(req_builder).await;
         msg_env.send_and_clear(&pid, |env| {
             let resp = match resp {
-                Ok((code, headers, body)) => {
+                Ok((status, headers, body)) => {
                     let headers1: Vec<_> = headers
                         .into_iter()
                         .map(|(k, v)| (k, v.release(env)))
                         .collect();
                     let mut map = map::map_new(env);
                     map = map
-                        .map_put(atoms::code().encode(env), code.encode(env))
+                        .map_put(atoms::status().encode(env), status.encode(env))
                         .unwrap();
                     map = map
                         .map_put(atoms::headers().encode(env), headers1.encode(env))
@@ -176,7 +207,7 @@ async fn do_req(
     req: reqwest::RequestBuilder,
 ) -> reqwest::Result<(u16, Vec<(String, OwnedBinary)>, OwnedBinary)> {
     let resp = req.send().await?;
-    let code = resp.status().as_u16();
+    let status = resp.status().as_u16();
     let headers = resp
         .headers()
         .iter()
@@ -189,7 +220,7 @@ async fn do_req(
     let bytes = resp.bytes().await?;
     let mut body = OwnedBinary::new(bytes.len()).unwrap();
     body.as_mut_slice().copy_from_slice(&bytes);
-    Ok((code, headers, body))
+    Ok((status, headers, body))
 }
 
 fn load(env: Env, _info: Term) -> bool {

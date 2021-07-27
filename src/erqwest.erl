@@ -1,25 +1,42 @@
 -module(erqwest).
 
 -export([ make_client/0
+        , make_client/1
         , req_async/4
         , req/2
+        , get/2
+        , get/3
+        , post/3
         ]).
 
 -on_load(init/0).
 
 -opaque client() :: reference().
+-type pkcs12_der() :: binary().
+-type password() :: binary().
+-type client_opts() :: #{ identity => {pkcs12_der(), password()}
+                        , follow_redirects => boolean() | non_neg_integer() %% default false
+                        }.
 -type method() :: options | get | post | put | delete | head | trace | connect | patch.
 -type header() :: {binary(), binary()}.
--type req() :: #{ url := binary()
+-type url() :: binary().
+-type req() :: #{ url := url()
                 , method := method()
                 , headers => [header()]
                 , body => binary()
+                , timeout => non_neg_integer() %% milliseconds
                 }.
--type resp() :: #{ code := 100..599
+-type req_opts() :: #{ headers => [header()]
+                     , body => binary()
+                     , timeout => non_neg_integer() %% milliseconds
+                     }.
+-type resp() :: #{ status := 100..599
                  , body := binary()
                  , headers := [header()]
                  }.
--type err() :: #{ reason := binary() }.
+-type err() :: #{ code := atom()
+                , reason := binary()
+                }.
 
 -export_type([ client/0
              , method/0
@@ -30,6 +47,10 @@
 
 -spec make_client() -> client().
 make_client() ->
+  make_client(#{}).
+
+-spec make_client(client_opts()) -> client().
+make_client(_Opts) ->
   error(nif_not_loaded).
 
 %% @doc Sends {erqwest_response, Ref, {ok, resp()} | {error, err()}} to Pid
@@ -43,6 +64,18 @@ req(Client, Req) ->
   receive
     {erqwest_response, Ref, Resp} -> Resp
   end.
+
+-spec get(client(), url()) -> {ok, resp()} | {error, err()}.
+get(Client, Url) ->
+  get(Client, Url, #{}).
+
+-spec get(client(), url(), req_opts()) -> {ok, resp()} | {error, err()}.
+get(Client, Url, Opts) ->
+  req(Client, Opts#{url => Url, method => get}).
+
+-spec post(client(), url(), req_opts()) -> {ok, resp()} | {error, err()}.
+post(Client, Url, Opts) ->
+  req(Client, Opts#{url => Url, method => post}).
 
 %% internal
 
