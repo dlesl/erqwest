@@ -12,21 +12,23 @@ Use
  ```
 $ rebar3 shell
 ...
+Erlang/OTP 24 [erts-12.0.3] [source] [64-bit] [smp:4:4] [ds:4:4:10] [async-threads:1] [jit]
+
+Eshell V12.0.3  (abort with ^G)
 1> C = erqwest:make_client().
-#Ref<0.1971165508.780533761.175600>
-2> erqwest:req(C, #{url => <<"https://httpbin.org/post">>, headers => [{<<"accept">>, <<"application/json">>}], method => post, body => <<"hello">>}).
+#Ref<0.3377202660.433717249.45961>
+2> erqwest:post(C, <<"https://httpbin.org/post">>, #{headers => [{<<"accept">>, <<"application/json">>}], body => <<"hello">>}).
 {ok,#{body =>
           <<"{\n  \"args\": {}, \n  \"data\": \"hello\", \n  \"files\": {}, \n  \"form\": {}, \n  \"headers\": {\n    \"Accept\": \"applic"...>>,
-      code => 200,
       headers =>
-          [{<<"date">>,<<"Mon, 26 Jul 2021 21:27:25 GMT">>},
+          [{<<"date">>,<<"Tue, 27 Jul 2021 17:48:27 GMT">>},
            {<<"content-type">>,<<"application/json">>},
            {<<"content-length">>,<<"331">>},
            {<<"connection">>,<<"keep-alive">>},
            {<<"server">>,<<"gunicorn/19.9.0">>},
            {<<"access-control-allow-origin">>,<<"*">>},
-           {<<"access-control-allow-credentials">>,<<"true">>}]}}
-
+           {<<"access-control-allow-credentials">>,<<"true">>}],
+      status => 200}}
  ```
 
 Todo
