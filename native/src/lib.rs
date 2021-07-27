@@ -1,4 +1,4 @@
-use reqwest::Identity;
+use reqwest::{Certificate, Identity};
 use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
 use rustler::{NifMap, NifUnitEnum, OwnedEnv, ResourceArc};
@@ -8,6 +8,7 @@ use tokio::runtime::{Handle, Runtime};
 
 mod atoms {
     rustler::atoms! {
+        additional_root_certs,
         body,
         status,
         erqwest_response,
@@ -19,7 +20,8 @@ mod atoms {
         ok,
         reason,
         timeout,
-        url
+        url,
+        use_built_in_root_certs
     }
 }
 
@@ -113,6 +115,24 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
                 Identity::from_pkcs12_der(pkcs12.as_slice(), &pass)
                     .map_err(|_| rustler::Error::BadArg)?,
             );
+        }
+        Err(_) => (),
+    };
+    match opts.map_get(atoms::use_built_in_root_certs().encode(env)) {
+        Ok(term) => {
+            builder = builder.tls_built_in_root_certs(term.decode()?);
+        }
+        Err(_) => (),
+    };
+    match opts.map_get(atoms::additional_root_certs().encode(env)) {
+        Ok(term) => {
+            for cert in term.decode::<ListIterator>()? {
+                let cert_bin: Binary = cert.decode()?;
+                builder = builder.add_root_certificate(
+                    Certificate::from_der(cert_bin.as_slice())
+                        .map_err(|_| rustler::Error::BadArg)?,
+                );
+            }
         }
         Err(_) => (),
     };

@@ -14,8 +14,11 @@
 -opaque client() :: reference().
 -type pkcs12_der() :: binary().
 -type password() :: binary().
+-type cert_der() :: binary().
 -type client_opts() :: #{ identity => {pkcs12_der(), password()}
                         , follow_redirects => boolean() | non_neg_integer() %% default false
+                        , additional_root_certs => [cert_der()]
+                        , use_built_in_root_certs => boolean() %% default true
                         }.
 -type method() :: options | get | post | put | delete | head | trace | connect | patch.
 -type header() :: {binary(), binary()}.
