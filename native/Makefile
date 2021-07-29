@@ -1,5 +1,11 @@
 PROJECT = erqwest
 
+PROFILE ?= release
+
+ifeq ($(PROFILE), release)
+	CARGO_OPTS += --release
+endif
+
 UNAME_SYS := $(shell uname -s)
 ifeq ($(UNAME_SYS), Darwin)
 	SO_EXT := dylib
@@ -12,9 +18,9 @@ OUTPUT := ../priv
 
 .PHONY: compile
 compile:
-	cargo build --release
+	cargo build $(CARGO_OPTS)
 	mkdir -p $(OUTPUT)
-	cp target/release/$(SO_NAME) $(OUTPUT)
+	cp target/$(PROFILE)/$(SO_NAME) $(OUTPUT)
 
 clean:
 	rm -f $(OUTPUT)/$(SO_NAME)
