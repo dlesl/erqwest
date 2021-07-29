@@ -20,6 +20,7 @@ OUTPUT := ../priv
 compile:
 	cargo build $(CARGO_OPTS)
 	mkdir -p $(OUTPUT)
+	rm -f $(OUTPUT)/$(SO_NAME) # see https://github.com/rusterlium/rustler/issues/128
 	cp target/$(PROFILE)/$(SO_NAME) $(OUTPUT)
 
 clean:
