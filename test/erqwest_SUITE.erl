@@ -70,8 +70,7 @@ post(Config) ->
 
 timeout(Config) ->
   C = ?config(client, Config),
-  %% TODO: fix this code
-  {error, #{code := request}} =
+  {error, #{code := timeout}} =
     erqwest:get(C, <<"https://httpbin.org/delay/1">>, #{timeout => 500}).
 
 redirects(_) ->
@@ -81,8 +80,7 @@ redirects(_) ->
   {ok, #{status := 200}} =
     erqwest:get(erqwest:make_client(#{follow_redirects => true}),
                 <<"https://nghttp2.org/httpbin/redirect/6">>),
-  %% TODO: fix this code
-  {error, #{code := unknown}} =
+  {error, #{code := redirect}} =
     erqwest:get(erqwest:make_client(#{follow_redirects => 5}),
                 <<"https://nghttp2.org/httpbin/redirect/6">>).
 

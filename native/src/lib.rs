@@ -2,6 +2,7 @@ use reqwest::{Certificate, Identity};
 use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
 use rustler::{NifMap, NifUnitEnum, OwnedEnv, ResourceArc};
+use std::io::Write;
 use std::thread;
 use std::time::Duration;
 use tokio::runtime::{Handle, Runtime};
@@ -55,35 +56,49 @@ impl Into<reqwest::Method> for Method {
     }
 }
 
-#[derive(NifMap)]
-struct Error {
-    code: ErrorCode,
-    reason: String,
-}
-
 #[derive(NifUnitEnum)]
 enum ErrorCode {
     Request,
+    Redirect,
     Connect,
     Timeout,
     Body,
     Unknown,
 }
 
-impl From<&reqwest::Error> for ErrorCode {
-    fn from(e: &reqwest::Error) -> ErrorCode {
+#[derive(NifMap)]
+struct Error {
+    code: ErrorCode,
+    reason: String,
+}
+
+impl Error {
+    fn unknown(reason: impl Into<String>) -> Error {
+        Error {
+            code: ErrorCode::Unknown,
+            reason: reason.into(),
+        }
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(e: reqwest::Error) -> Error {
         use ErrorCode::*;
-        if e.is_request() {
-            Request
+        let code = if e.is_timeout() {
+            Timeout
+        } else if e.is_redirect() {
+            Redirect
         } else if e.is_connect() {
             Connect
-        } else if e.is_timeout() {
-            Timeout
+        } else if e.is_request() {
+            Request
         } else if e.is_body() {
             Body
         } else {
             Unknown
-        }
+        };
+        let reason = e.to_string();
+        Error { code, reason }
     }
 }
 
@@ -148,7 +163,9 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
         Err(_) => Ok(reqwest::redirect::Policy::none()),
     }?;
     builder = builder.redirect(policy);
-    Ok(ResourceArc::new(ClientResource(builder.build().unwrap())))
+    Ok(ResourceArc::new(ClientResource(builder.build().map_err(
+        |e| rustler::Error::RaiseTerm(Box::new(Error::unknown(e.to_string()))),
+    )?)))
 }
 
 #[rustler::nif]
@@ -186,61 +203,59 @@ fn req_async(
     };
     let mut msg_env = OwnedEnv::new();
     let caller_ref = msg_env.save(caller_ref);
-    HANDLE.spawn(async move {
+    let fut = async move {
         let resp = do_req(req_builder).await;
         msg_env.send_and_clear(&pid, |env| {
-            let resp = match resp {
-                Ok((status, headers, body)) => {
-                    let headers1: Vec<_> = headers
-                        .into_iter()
-                        .map(|(k, v)| (k, v.release(env)))
-                        .collect();
-                    let mut map = map::map_new(env);
-                    map = map
-                        .map_put(atoms::status().encode(env), status.encode(env))
-                        .unwrap();
-                    map = map
-                        .map_put(atoms::headers().encode(env), headers1.encode(env))
-                        .unwrap();
-                    map = map
-                        .map_put(atoms::body().encode(env), body.release(env).encode(env))
-                        .unwrap();
-                    (atoms::ok(), map).encode(env)
-                }
-                Err(e) => (
-                    atoms::error(),
-                    Error {
-                        code: (&e).into(),
-                        reason: e.to_string(),
-                    },
-                )
-                    .encode(env),
+            let res = resp.and_then(|r| {
+                encode_resp(env.clone(), r).map_err(|_| Error::unknown("failed encoding result"))
+            });
+            let res = match res {
+                Ok(term) => (atoms::ok(), term).encode(env),
+                Err(e) => env.error_tuple(e)
             };
             let caller_ref = caller_ref.load(env);
-            (atoms::erqwest_response(), caller_ref, resp).encode(env)
+            (atoms::erqwest_response(), caller_ref, res).encode(env)
         });
-    });
+    };
+    HANDLE.spawn(fut);
     Ok(atoms::ok())
 }
 
 async fn do_req(
     req: reqwest::RequestBuilder,
-) -> reqwest::Result<(u16, Vec<(String, OwnedBinary)>, OwnedBinary)> {
+) -> Result<(u16, Vec<(String, OwnedBinary)>, OwnedBinary), Error> {
     let resp = req.send().await?;
     let status = resp.status().as_u16();
-    let headers = resp
-        .headers()
-        .iter()
-        .map(|(k, v)| {
-            let mut v1 = OwnedBinary::new(v.as_bytes().len()).unwrap();
-            v1.as_mut_slice().copy_from_slice(v.as_bytes());
-            (k.as_str().into(), v1)
-        })
-        .collect();
+    // Do we need to handle this or would unwrap do?
+    let allocation_failed = || Error {
+        code: ErrorCode::Unknown,
+        reason: "binary allocation failed".into(),
+    };
+    let mut headers = Vec::with_capacity(resp.headers().len());
+    for (k, v) in resp.headers().iter() {
+        let mut v1 = OwnedBinary::new(v.as_bytes().len()).ok_or_else(allocation_failed)?;
+        v1.as_mut_slice().write_all(v.as_bytes()).unwrap();
+        headers.push((k.as_str().into(), v1))
+    }
     let bytes = resp.bytes().await?;
-    let mut body = OwnedBinary::new(bytes.len()).unwrap();
-    body.as_mut_slice().copy_from_slice(&bytes);
+    let mut body = OwnedBinary::new(bytes.len()).ok_or_else(allocation_failed)?;
+    body.as_mut_slice().write_all(&bytes).unwrap();
     Ok((status, headers, body))
+}
+
+fn encode_resp(
+    env: Env,
+    (status, headers, body): (u16, Vec<(String, OwnedBinary)>, OwnedBinary),
+) -> NifResult<Term> {
+    let headers1: Vec<_> = headers
+        .into_iter()
+        .map(|(k, v)| (k, v.release(env)))
+        .collect();
+    let mut map = map::map_new(env);
+    map = map.map_put(atoms::status().encode(env), status.encode(env))?;
+    map = map.map_put(atoms::headers().encode(env), headers1.encode(env))?;
+    map = map.map_put(atoms::body().encode(env), body.release(env).encode(env))?;
+    Ok(map.encode(env))
 }
 
 fn load(env: Env, _info: Term) -> bool {
