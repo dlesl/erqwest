@@ -1,3 +1,4 @@
+
 erqwest
 =====
 
@@ -5,6 +6,15 @@ An experimental erlang wrapper for
 [reqwest](https://github.com/seanmonstar/reqwest) using
 [rustler](https://github.com/rusterlium/rustler). Map-based interface inspired
 by [katipo](https://github.com/puzza007/katipo).
+
+Prerequisites
+-------------
+
+* Erlang/OTP
+* Rust
+* Openssl
+
+Or use the provided `shell.nix` if you have nix installed.
 
 Use
 ---
@@ -31,9 +41,12 @@ Eshell V12.0.3  (abort with ^G)
       status => 200}}
  ```
 
+
+[Benchmarks](bench)
+-------------------
+
 Todo
 ----
 
 * Shut down tokio event loop cleanly
 * Test thoroughly
-* Benchmark
