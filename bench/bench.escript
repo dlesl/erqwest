@@ -9,10 +9,12 @@
 -define(TIME, timer:seconds(30)).
 -define(KATIPO_POOL, pool).
 -define(KATIPO_POOL_SIZE, 8).
+-define(PAYLOAD_SIZE, 10 * 1024).
+-define(PAYLOAD, << <<0>> || _ <- lists:seq(1, ?PAYLOAD_SIZE) >>).
 
 main([Client0]) ->
   Client = list_to_atom(Client0),
-  Fun = req_fun(Client),
+  Fun = req_fun(Client, ?PAYLOAD),
   run(Client, http, Fun),
   run(Client, https, Fun).
 
@@ -47,7 +49,7 @@ worker(Pid, Fun, Count) ->
       end
   end.
 
-req_fun(erqwest) ->
+req_fun(erqwest, Payload) ->
   {ok, _} = application:ensure_all_started(erqwest),
   {ok, PemBin} = file:read_file("cert.crt"),
   [{'Certificate', Cert, _}] = public_key:pem_decode(PemBin),
@@ -56,22 +58,22 @@ req_fun(erqwest) ->
                            , danger_accept_invalid_certs => true
                            }),
   fun(Url) ->
-      {ok, #{status := 200, body := <<"hey">>}} =
-        erqwest:post(C, Url, #{body => <<"hey">>})
+      {ok, #{status := 200, body := Payload}} =
+        erqwest:post(C, Url, #{body => Payload})
   end;
-req_fun(katipo) ->
+req_fun(katipo, Payload) ->
   {ok, _} = application:ensure_all_started(katipo),
   {ok, _} = katipo_pool:start(?KATIPO_POOL, ?KATIPO_POOL_SIZE, [{pipelining, multiplex}]),
   fun(Url) ->
-      {ok, #{status := 200, body := <<"hey">>}} =
-        katipo:post(?KATIPO_POOL, Url, #{ body => <<"hey">>
+      {ok, #{status := 200, body := Payload}} =
+        katipo:post(?KATIPO_POOL, Url, #{ body => Payload
                                         , ssl_verifypeer => false
                                         , ssl_verifyhost => false
                                         })
   end;
-req_fun(hackney) ->
+req_fun(hackney, Payload) ->
   {ok, _} = application:ensure_all_started(hackney),
   fun(Url) ->
-      {ok, 200, _, <<"hey">>} =
-        hackney:post(Url, [], <<"hey">>, [with_body, {ssl_options, [{verify, verify_none}]}])
+      {ok, 200, _, Payload} =
+        hackney:post(Url, [], Payload, [with_body, {ssl_options, [{verify, verify_none}]}])
   end.
