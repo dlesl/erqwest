@@ -181,7 +181,7 @@ fn close_client(resource: ResourceArc<ClientResource>) -> NifResult<Atom> {
 }
 
 #[rustler::nif]
-fn req_async(
+fn req_async_internal(
     resource: ResourceArc<ClientResource>,
     pid: LocalPid,
     caller_ref: Term,
@@ -277,4 +277,4 @@ fn load(env: Env, _info: Term) -> bool {
     true
 }
 
-rustler::init!("erqwest", [make_client, close_client, req_async], load = load);
+rustler::init!("erqwest", [make_client, close_client, req_async_internal], load = load);
