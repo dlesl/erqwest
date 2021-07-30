@@ -2,6 +2,7 @@
 
 -export([ make_client/0
         , make_client/1
+        , close_client/1
         , req_async/4
         , req/2
         , get/2
@@ -56,11 +57,33 @@ make_client() ->
 make_client(_Opts) ->
   erlang:nif_error(nif_not_loaded).
 
-%% @doc Sends {erqwest_response, Ref, {ok, resp()} | {error, err()}} to Pid
+%% @doc Close a client and idle connections in its pool. Returns immediately,
+%% but the connection pool will not be cleaned up until all in-flight requests
+%% for this client have returned.
+%%
+%% You do not have to call this function, since
+%% the client will automatically be cleaned up when it is garbage collected by
+%% the VM.
+%%
+%% Fails with reason badarg if the client has already been closed.
+-spec close_client(client()) -> ok.
+close_client(_Client) ->
+  erlang:nif_error(nif_not_loaded).
+
+%% @doc Make an asynchronous request.
+%%
+%% Sends `{erqwest_response, Ref, {ok, resp()} | {error, err()}}' to `Pid'.
+%%
+%% Fails with reason badarg if any argument is invalid or if the client has
+%% already been closed.
 -spec req_async(client(), pid(), any(), req()) -> ok.
 req_async(_Client, _Pid, _Ref, _Req) ->
   erlang:nif_error(nif_not_loaded).
 
+%% @doc Make a synchronous request.
+%%
+%% Fails with reason badarg if any argument is invalid or if the client has
+%% already been closed.
 -spec req(client(), req()) -> {ok, resp()} | {error, err()}.
 req(Client, Req) ->
   ok = req_async(Client, self(), Ref=make_ref(), Req),
@@ -68,14 +91,17 @@ req(Client, Req) ->
     {erqwest_response, Ref, Resp} -> Resp
   end.
 
+%% @doc Convenience wrapper for {@link req/2}.
 -spec get(client(), url()) -> {ok, resp()} | {error, err()}.
 get(Client, Url) ->
   get(Client, Url, #{}).
 
+%% @doc Convenience wrapper for {@link req/2}.
 -spec get(client(), url(), req_opts()) -> {ok, resp()} | {error, err()}.
 get(Client, Url, Opts) ->
   req(Client, Opts#{url => Url, method => get}).
 
+%% @doc Convenience wrapper for {@link req/2}.
 -spec post(client(), url(), req_opts()) -> {ok, resp()} | {error, err()}.
 post(Client, Url, Opts) ->
   req(Client, Opts#{url => Url, method => post}).

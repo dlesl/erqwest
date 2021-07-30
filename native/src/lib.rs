@@ -3,6 +3,7 @@ use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
 use rustler::{NifMap, NifUnitEnum, OwnedEnv, ResourceArc};
 use std::io::Write;
+use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
 use tokio::runtime::{Handle, Runtime};
@@ -114,7 +115,7 @@ lazy_static::lazy_static! {
     };
 }
 
-struct ClientResource(reqwest::Client);
+struct ClientResource(RwLock<Option<reqwest::Client>>);
 
 #[rustler::nif]
 fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
@@ -163,9 +164,20 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
         Err(_) => Ok(reqwest::redirect::Policy::none()),
     }?;
     builder = builder.redirect(policy);
-    Ok(ResourceArc::new(ClientResource(builder.build().map_err(
+    let client = builder.build().map_err(
         |e| rustler::Error::RaiseTerm(Box::new(Error::unknown(e.to_string()))),
-    )?)))
+    )?;
+    Ok(ResourceArc::new(ClientResource(RwLock::new(Some(client)))))
+}
+
+#[rustler::nif]
+fn close_client(resource: ResourceArc<ClientResource>) -> NifResult<Atom> {
+    if let Some(_) = resource.0.write().unwrap().take() {
+        Ok(atoms::ok())
+    } else {
+        // already closed
+        Err(rustler::Error::BadArg)
+    }
 }
 
 #[rustler::nif]
@@ -178,7 +190,8 @@ fn req_async(
     let env = req.get_env();
     let url: String = req.map_get(atoms::url().encode(env))?.decode()?;
     let method: Method = req.map_get(atoms::method().encode(env))?.decode()?;
-    let client = resource.0.clone();
+    // returns BadArg if the client was already closed with close_client
+    let client = resource.0.read().unwrap().as_ref().ok_or(rustler::Error::BadArg)?.clone();
     let mut req_builder = client.request(method.into(), url);
     match req.map_get(atoms::headers().encode(env)) {
         Ok(term) => {
@@ -264,4 +277,4 @@ fn load(env: Env, _info: Term) -> bool {
     true
 }
 
-rustler::init!("erqwest", [make_client, req_async], load = load);
+rustler::init!("erqwest", [make_client, close_client, req_async], load = load);
