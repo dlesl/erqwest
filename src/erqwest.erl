@@ -41,7 +41,8 @@
                  , body := binary()
                  , headers := [header()]
                  }.
--type err() :: #{ code := atom()
+-type err_code() :: timeout | redirect | connect | request | body | unknown.
+-type err() :: #{ code := err_code()
                 , reason := binary()
                 }.
 

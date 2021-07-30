@@ -38,6 +38,7 @@ groups() ->
      , get_http
      , post
      , timeout
+     , connect
      , redirects
      ]}
   , {client_cert, [],
@@ -71,6 +72,10 @@ post(_Config) ->
 timeout(_Config) ->
   {error, #{code := timeout}} =
     erqwest:get(default, <<"https://httpbin.org/delay/1">>, #{timeout => 500}).
+
+connect(_Config) ->
+  {error, #{code := connect}} =
+    erqwest:get(default, <<"https://httpbin:12345">>).
 
 redirects(_) ->
   {ok, #{status := 302}} =
