@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Module erqwest</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module erqwest</h1>
+<ul class="index"><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+
+
+<h2><a name="types">Data Types</a></h2>
+
+<h3 class="typedecl"><a name="type-cert_der">cert_der()</a></h3>
+<p><tt>cert_der() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-client">client()</a></h3>
+<p><b>abstract datatype</b>: <tt>client()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-client_opts">client_opts()</a></h3>
+<p><tt>client_opts() = #{identity =&gt; {<a href="#type-pkcs12_der">pkcs12_der()</a>, <a href="#type-password">password()</a>}, follow_redirects =&gt; boolean() | non_neg_integer(), additional_root_certs =&gt; [<a href="#type-cert_der">cert_der()</a>], use_built_in_root_certs =&gt; boolean()}</tt></p>
+<p>  default true</p>
+
+<h3 class="typedecl"><a name="type-err">err()</a></h3>
+<p><tt>err() = #{code := atom(), reason := binary()}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-header">header()</a></h3>
+<p><tt>header() = {binary(), binary()}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-method">method()</a></h3>
+<p><tt>method() = options | get | post | put | delete | head | trace | connect | patch</tt></p>
+
+
+<h3 class="typedecl"><a name="type-password">password()</a></h3>
+<p><tt>password() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-pkcs12_der">pkcs12_der()</a></h3>
+<p><tt>pkcs12_der() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-req">req()</a></h3>
+<p><tt>req() = #{url := <a href="#type-url">url()</a>, method := <a href="#type-method">method()</a>, headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; non_neg_integer()}</tt></p>
+<p>  milliseconds</p>
+
+<h3 class="typedecl"><a name="type-req_opts">req_opts()</a></h3>
+<p><tt>req_opts() = #{headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; non_neg_integer()}</tt></p>
+<p>  milliseconds</p>
+
+<h3 class="typedecl"><a name="type-resp">resp()</a></h3>
+<p><tt>resp() = #{status := 100..599, body := binary(), headers := [<a href="#type-header">header()</a>]}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-url">url()</a></h3>
+<p><tt>url() = binary()</tt></p>
+
+
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#close_client-1">close_client/1</a></td><td>Close a client and idle connections in its pool.</td></tr>
+<tr><td valign="top"><a href="#get-2">get/2</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
+<tr><td valign="top"><a href="#get-3">get/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
+<tr><td valign="top"><a href="#make_client-0">make_client/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#make_client-1">make_client/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#post-3">post/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
+<tr><td valign="top"><a href="#req-2">req/2</a></td><td>Make a synchronous request.</td></tr>
+<tr><td valign="top"><a href="#req_async-4">req_async/4</a></td><td>Make an asynchronous request.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="close_client-1">close_client/1</a></h3>
+<div class="spec">
+<p><tt>close_client(Client::<a href="#type-client">client()</a>) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p><p>Close a client and idle connections in its pool. Returns immediately,  
+but the connection pool will not be cleaned up until all in-flight requests  
+for this client have returned.</p>
+ 
+  <p>You do not have to call this function, since  
+the client will automatically be cleaned up when it is garbage collected by  
+the VM.</p>
+ 
+  Fails with reason badarg if the client has already been closed.</p>
+
+<h3 class="function"><a name="get-2">get/2</a></h3>
+<div class="spec">
+<p><tt>get(Client::<a href="#type-client">client()</a>, Url::<a href="#type-url">url()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
+
+<h3 class="function"><a name="get-3">get/3</a></h3>
+<div class="spec">
+<p><tt>get(Client::<a href="#type-client">client()</a>, Url::<a href="#type-url">url()</a>, Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
+
+<h3 class="function"><a name="make_client-0">make_client/0</a></h3>
+<div class="spec">
+<p><tt>make_client() -&gt; <a href="#type-client">client()</a></tt><br></p>
+<p> </p>
+</div>
+
+<h3 class="function"><a name="make_client-1">make_client/1</a></h3>
+<div class="spec">
+<p><tt>make_client(Opts::<a href="#type-client_opts">client_opts()</a>) -&gt; <a href="#type-client">client()</a></tt><br></p>
+<p> </p>
+</div>
+
+<h3 class="function"><a name="post-3">post/3</a></h3>
+<div class="spec">
+<p><tt>post(Client::<a href="#type-client">client()</a>, Url::<a href="#type-url">url()</a>, Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
+
+<h3 class="function"><a name="req-2">req/2</a></h3>
+<div class="spec">
+<p><tt>req(Client::<a href="#type-client">client()</a>, Req::<a href="#type-req">req()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p><p>Make a synchronous request.</p>
+ 
+  Fails with reason badarg if any argument is invalid or if the client has
+  already been closed.</p>
+
+<h3 class="function"><a name="req_async-4">req_async/4</a></h3>
+<div class="spec">
+<p><tt>req_async(Client::<a href="#type-client">client()</a>, Pid::pid(), Ref::any(), Req::<a href="#type-req">req()</a>) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p><p>Make an asynchronous request.</p>
+ 
+  <p>Sends <code>{erqwest_response, Ref, {ok, resp()} | {error, err()}}</code> to <code>Pid</code>.</p>
+ 
+  Fails with reason badarg if any argument is invalid or if the client has
+  already been closed.</p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc</i></p>
+</body>
+</html>
