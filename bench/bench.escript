@@ -51,7 +51,10 @@ req_fun(erqwest) ->
   {ok, _} = application:ensure_all_started(erqwest),
   {ok, PemBin} = file:read_file("cert.crt"),
   [{'Certificate', Cert, _}] = public_key:pem_decode(PemBin),
-  C = erqwest:make_client(#{additional_root_certs => [Cert]}),
+  C = erqwest:make_client(#{ additional_root_certs => [Cert]
+                           , danger_accept_invalid_hostnames => true
+                           , danger_accept_invalid_certs => true
+                           }),
   fun(Url) ->
       {ok, #{status := 200, body := <<"hey">>}} =
         erqwest:post(C, Url, #{body => <<"hey">>})

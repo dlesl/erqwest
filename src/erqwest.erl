@@ -23,6 +23,8 @@
                         , follow_redirects => boolean() | non_neg_integer() %% default false
                         , additional_root_certs => [cert_der()]
                         , use_built_in_root_certs => boolean() %% default true
+                        , danger_accept_invalid_hostnames => boolean() %% default false
+                        , danger_accept_invalid_certs => boolean() %% default false
                         }.
 -type method() :: options | get | post | put | delete | head | trace | connect | patch.
 -type header() :: {binary(), binary()}.

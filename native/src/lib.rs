@@ -23,7 +23,9 @@ mod atoms {
         reason,
         timeout,
         url,
-        use_built_in_root_certs
+        use_built_in_root_certs,
+        danger_accept_invalid_hostnames,
+        danger_accept_invalid_certs
     }
 }
 
@@ -164,6 +166,18 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
         Err(_) => Ok(reqwest::redirect::Policy::none()),
     }?;
     builder = builder.redirect(policy);
+    match opts.map_get(atoms::danger_accept_invalid_hostnames().encode(env)) {
+        Ok(term) => {
+            builder = builder.danger_accept_invalid_hostnames(term.decode()?);
+        },
+        Err(_) => ()
+    };
+    match opts.map_get(atoms::danger_accept_invalid_certs().encode(env)) {
+        Ok(term) => {
+            builder = builder.danger_accept_invalid_certs(term.decode()?);
+        },
+        Err(_) => ()
+    };
     let client = builder.build().map_err(
         |e| rustler::Error::RaiseTerm(Box::new(Error::unknown(e.to_string()))),
     )?;
