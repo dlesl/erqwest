@@ -6,7 +6,7 @@ edition = "2018"
 [lib]
 name = "erqwest"
 path = "src/lib.rs"
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 rustler = "0.22.0"
