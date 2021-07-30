@@ -45,6 +45,9 @@ Eshell V12.0.3  (abort with ^G)
 [Benchmarks](bench)
 -------------------
 
+[Docs](https://dlesl.github.io/erqwest/)
+----
+
 Todo
 ----
 
