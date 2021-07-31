@@ -9,20 +9,23 @@
 -include_lib("common_test/include/ct.hrl").
 
 init_per_suite(Config) ->
-    application:ensure_all_started(erqwest),
-    Config.
+  {ok, _} = application:ensure_all_started(erqwest),
+  ok = erqwest:start_client(default),
+  Config.
 
 end_per_suite(_Config) ->
-    ok = application:stop(erqwest).
+  ok = erqwest:stop_client(default),
+  ok = application:stop(erqwest).
 
 init_per_group(http, Config) ->
-  [{client, erqwest:make_client()}|Config];
+  Config;
 init_per_group(client_cert, Config) ->
   {ok, #{status := 200, body := Cert}} =
-    erqwest:get(erqwest:make_client(), <<"https://badssl.com/certs/badssl.com-client.p12">>),
+    erqwest:get(default, <<"https://badssl.com/certs/badssl.com-client.p12">>),
   [ {cert, Cert}
   , {pass, <<"badssl.com">>}
-  | Config].
+  | Config
+  ].
 
 end_per_group(http, Config) ->
   Config;
@@ -48,30 +51,26 @@ all() ->
   , {group, client_cert}
   ].
 
-get(Config) ->
-  C = ?config(client, Config),
+get(_Config) ->
   {ok, #{status := 200, body := Body}} =
-    erqwest:get(C, <<"https://httpbin.org/get?a=%21%40%23%24%25%5E%26%2A%28%29_%2B">>),
+    erqwest:get(default, <<"https://httpbin.org/get?a=%21%40%23%24%25%5E%26%2A%28%29_%2B">>),
   #{<<"args">> := #{<<"a">> := <<"!@#$%^&*()_+">>}} = jsx:decode(Body).
 
-get_http(Config) ->
-  C = ?config(client, Config),
+get_http(_Config) ->
   {ok, #{status := 200, body := Body}} =
-    erqwest:get(C, <<"http://httpbin.org/get?a=%21%40%23%24%25%5E%26%2A%28%29_%2B">>),
+    erqwest:get(default, <<"http://httpbin.org/get?a=%21%40%23%24%25%5E%26%2A%28%29_%2B">>),
   #{<<"args">> := #{<<"a">> := <<"!@#$%^&*()_+">>}} = jsx:decode(Body).
 
-post(Config) ->
-  C = ?config(client, Config),
+post(_Config) ->
   {ok, #{status := 200, body := Body}} =
-    erqwest:post(C, <<"https://httpbin.org/post">>,
+    erqwest:post(default, <<"https://httpbin.org/post">>,
                  #{ headers => [{<<"Content-Type">>, <<"application/json">>}]
                   , body => <<"!@#$%^&*()">>}),
   #{<<"data">> := <<"!@#$%^&*()">>} = jsx:decode(Body).
 
-timeout(Config) ->
-  C = ?config(client, Config),
+timeout(_Config) ->
   {error, #{code := timeout}} =
-    erqwest:get(C, <<"https://httpbin.org/delay/1">>, #{timeout => 500}).
+    erqwest:get(default, <<"https://httpbin.org/delay/1">>, #{timeout => 500}).
 
 redirects(_) ->
   {ok, #{status := 302}} =
