@@ -28,24 +28,26 @@ run(Name, https, Fun) ->
 bench(Fun) ->
   Self = self(),
   Start = os:timestamp(),
-  Workers = [spawn(fun() -> worker(Self, Fun, 0) end) || _ <- lists:seq(1, ?WORKERS)],
+  Workers = [spawn(fun() -> worker(Self, Fun, 0, 0) end) || _ <- lists:seq(1, ?WORKERS)],
   timer:sleep(?TIME),
   [W ! stop || W <- Workers],
   Results = [receive Res -> Res end || _ <- lists:seq(1, ?WORKERS)],
   DiffMs = timer:now_diff(os:timestamp(), Start) div 1000,
-  Success = lists:sum([N || {ok, N} <- Results]) + lists:sum([N || {error, N} <- Results]),
-  io:format("~B requests succeeded in ~B ms, ~f r/s~n", [Success, DiffMs, Success / (DiffMs / 1000.0)]),
-  ok.
+  {Success0, Error0} = lists:unzip(Results),
+  Success = lists:sum(Success0),
+  Error = lists:sum(Error0),
+  io:format("~B requests succeeded in ~B ms, ~f r/s, ~B errors~n",
+            [Success, DiffMs, Success / (DiffMs / 1000.0), Error]).
 
-worker(Pid, Fun, Count) ->
+worker(Pid, Fun, Success, Error) ->
   receive
-    stop -> Pid ! {ok, Count}
+    stop -> Pid ! {Success, Error}
   after 0 ->
       try Fun() of
-        _ -> worker(Pid, Fun, Count + 1)
+        _ -> worker(Pid, Fun, Success + 1, Error)
       catch T:R:S ->
-          io:format("worker failed after ~B with ~p:~p:~p~n", [Count, T, R, S]),
-          Pid ! {error, Count}
+          io:format("worker failed with ~p:~p:~p~n", [T, R, S]),
+          worker(Pid, Fun, Success, Error + 1)
       end
   end.
 
@@ -75,5 +77,8 @@ req_fun(hackney, Payload) ->
   {ok, _} = application:ensure_all_started(hackney),
   fun(Url) ->
       {ok, 200, _, Payload} =
-        hackney:post(Url, [], Payload, [with_body, {ssl_options, [{verify, verify_none}]}])
+        hackney:post(Url, [], Payload, [with_body, {ssl_options, [ {verify, verify_none}
+                                                                   %% silence insecure ssl warnings
+                                                                 , {log_level, error}
+                                                                 ]}])
   end.
