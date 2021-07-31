@@ -105,9 +105,8 @@ stop_client(Name) ->
 %% Fails with reason badarg if any argument is invalid or if the client has
 %% already been closed.
 -spec req_async(client() | atom(), pid(), any(), req()) -> ok.
-req_async(NamedClient, Pid, Ref, Req) when is_atom(NamedClient) ->
-  Client = persistent_term:get({?MODULE, NamedClient}),
-  req_async_internal(Client, Pid, Ref, Req);
+req_async(Client, Pid, Ref, Req) when is_atom(Client) ->
+  req_async_internal(persistent_term:get({?MODULE, Client}), Pid, Ref, Req);
 req_async(Client, Pid, Ref, Req) ->
   req_async_internal(Client, Pid, Ref, Req).
 

@@ -1,6 +1,6 @@
 {application, erqwest,
- [{description, "An OTP library"},
-  {vsn, "0.1.0"},
+ [{description, "An erlang HTTP client wrapping reqwest"},
+  {vsn, "0.0.1"},
   {registered, []},
   {applications,
    [kernel,
@@ -8,7 +8,7 @@
    ]},
   {env,[]},
   {modules, []},
-
+  {files, ["native", "src", "rebar.config", "LICENSE"]},
   {licenses, ["Apache 2.0"]},
-  {links, []}
+  {links, [{"GitHub", "https://github.com/dlesl/erqwest"}]}
  ]}.

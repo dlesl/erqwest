@@ -7,46 +7,52 @@ An experimental erlang wrapper for
 [rustler](https://github.com/rusterlium/rustler). Map-based interface inspired
 by [katipo](https://github.com/puzza007/katipo).
 
+How it works
+------------
+
+HTTP requests are performed asynchronously on a [tokio](https://tokio.rs/)
+`Runtime` and the responses returned as an erlang message.
+
 Prerequisites
 -------------
 
 * Erlang/OTP
 * Rust
-* Openssl
+* Openssl (not required on mac)
 
 Or use the provided `shell.nix` if you have nix installed.
 
-Use
+Usage
 ---
 
+### Start a client
+
+``` erlang
+ok = erqwest:start_client(default).
+```
+
+This registers a client under the name `default`. The client maintains an
+internal connection pool. 
+
+### Synchronous interface
+ ``` erlang
+{ok, #{status := 200}} = erqwest:get(default, <<"https://httpbin.org/get">>).
  ```
-$ rebar3 shell
-...
-Erlang/OTP 24 [erts-12.0.3] [source] [64-bit] [smp:4:4] [ds:4:4:10] [async-threads:1] [jit]
+ 
+### Asynchronous interface
 
-Eshell V12.0.3  (abort with ^G)
-1> C = erqwest:make_client().
-#Ref<0.3377202660.433717249.45961>
-2> erqwest:post(C, <<"https://httpbin.org/post">>, #{headers => [{<<"accept">>, <<"application/json">>}], body => <<"hello">>}).
-{ok,#{body =>
-          <<"{\n  \"args\": {}, \n  \"data\": \"hello\", \n  \"files\": {}, \n  \"form\": {}, \n  \"headers\": {\n    \"Accept\": \"applic"...>>,
-      headers =>
-          [{<<"date">>,<<"Tue, 27 Jul 2021 17:48:27 GMT">>},
-           {<<"content-type">>,<<"application/json">>},
-           {<<"content-length">>,<<"331">>},
-           {<<"connection">>,<<"keep-alive">>},
-           {<<"server">>,<<"gunicorn/19.9.0">>},
-           {<<"access-control-allow-origin">>,<<"*">>},
-           {<<"access-control-allow-credentials">>,<<"true">>}],
-      status => 200}}
- ```
-
-
-[Benchmarks](bench)
--------------------
+``` erlang
+ok = erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/get">>}).
+receive
+    {erqwest_response, Ref, {ok, #{status := 200}}} -> ok
+end.
+```
 
 [Docs](https://dlesl.github.io/erqwest/)
 ----
+
+[Benchmarks](bench)
+-------------------
 
 Todo
 ----
