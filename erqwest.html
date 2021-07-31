@@ -24,11 +24,15 @@
 
 
 <h3 class="typedecl"><a name="type-client_opts">client_opts()</a></h3>
-<p><tt>client_opts() = #{identity =&gt; {<a href="#type-pkcs12_der">pkcs12_der()</a>, <a href="#type-password">password()</a>}, follow_redirects =&gt; boolean() | non_neg_integer(), additional_root_certs =&gt; [<a href="#type-cert_der">cert_der()</a>], use_built_in_root_certs =&gt; boolean()}</tt></p>
-<p>  default true</p>
+<p><tt>client_opts() = #{identity =&gt; {<a href="#type-pkcs12_der">pkcs12_der()</a>, <a href="#type-password">password()</a>}, follow_redirects =&gt; boolean() | non_neg_integer(), additional_root_certs =&gt; [<a href="#type-cert_der">cert_der()</a>], use_built_in_root_certs =&gt; boolean(), danger_accept_invalid_hostnames =&gt; boolean(), danger_accept_invalid_certs =&gt; boolean()}</tt></p>
+
 
 <h3 class="typedecl"><a name="type-err">err()</a></h3>
-<p><tt>err() = #{code := atom(), reason := binary()}</tt></p>
+<p><tt>err() = #{code := <a href="#type-err_code">err_code()</a>, reason := binary()}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-err_code">err_code()</a></h3>
+<p><tt>err_code() = timeout | redirect | connect | request | body | unknown</tt></p>
 
 
 <h3 class="typedecl"><a name="type-header">header()</a></h3>
