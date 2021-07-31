@@ -72,6 +72,10 @@
 <tr><td valign="top"><a href="#post-3">post/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#req-2">req/2</a></td><td>Make a synchronous request.</td></tr>
 <tr><td valign="top"><a href="#req_async-4">req_async/4</a></td><td>Make an asynchronous request.</td></tr>
+<tr><td valign="top"><a href="#start_client-1">start_client/1</a></td><td>Equivalent to <a href="#start_client-2"><tt>start_client(Name, #{})</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#start_client-2">start_client/2</a></td><td>Start a client registered under <code>Name</code>.</td></tr>
+<tr><td valign="top"><a href="#stop_client-1">stop_client/1</a></td><td>Unregisters and calls <a docgen-rel="seemfa" docgen-href="#close_client/1" href="#close_client-1"><code>close_client/1</code></a> on a named client.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
@@ -92,13 +96,13 @@ the VM.</p>
 
 <h3 class="function"><a name="get-2">get/2</a></h3>
 <div class="spec">
-<p><tt>get(Client::<a href="#type-client">client()</a>, Url::<a href="#type-url">url()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::<a href="#type-url">url()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
 <h3 class="function"><a name="get-3">get/3</a></h3>
 <div class="spec">
-<p><tt>get(Client::<a href="#type-client">client()</a>, Url::<a href="#type-url">url()</a>, Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::<a href="#type-url">url()</a>, Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
@@ -116,13 +120,13 @@ the VM.</p>
 
 <h3 class="function"><a name="post-3">post/3</a></h3>
 <div class="spec">
-<p><tt>post(Client::<a href="#type-client">client()</a>, Url::<a href="#type-url">url()</a>, Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>post(Client::<a href="#type-client">client()</a> | atom(), Url::<a href="#type-url">url()</a>, Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
 <h3 class="function"><a name="req-2">req/2</a></h3>
 <div class="spec">
-<p><tt>req(Client::<a href="#type-client">client()</a>, Req::<a href="#type-req">req()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>req(Client::<a href="#type-client">client()</a> | atom(), Req::<a href="#type-req">req()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p><p>Make a synchronous request.</p>
  
@@ -131,7 +135,7 @@ the VM.</p>
 
 <h3 class="function"><a name="req_async-4">req_async/4</a></h3>
 <div class="spec">
-<p><tt>req_async(Client::<a href="#type-client">client()</a>, Pid::pid(), Ref::any(), Req::<a href="#type-req">req()</a>) -&gt; ok</tt><br></p>
+<p><tt>req_async(NamedClient::<a href="#type-client">client()</a> | atom(), Pid::pid(), Ref::any(), Req::<a href="#type-req">req()</a>) -&gt; ok</tt><br></p>
 <p> </p>
 </div><p><p>Make an asynchronous request.</p>
  
@@ -139,6 +143,28 @@ the VM.</p>
  
   Fails with reason badarg if any argument is invalid or if the client has
   already been closed.</p>
+
+<h3 class="function"><a name="start_client-1">start_client/1</a></h3>
+<div class="spec">
+<p><tt>start_client(Name::atom()) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p>Equivalent to <a href="#start_client-2"><tt>start_client(Name, #{})</tt></a>.</p>
+
+
+<h3 class="function"><a name="start_client-2">start_client/2</a></h3>
+<div class="spec">
+<p><tt>start_client(Name::atom(), Opts::<a href="#type-client_opts">client_opts()</a>) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p>Start a client registered under <code>Name</code>. The implementation uses
+  <code>persistent_term</code> and is not intended for clients that will be frequently
+  started and stopped. For such uses see <a docgen-rel="seemfa" docgen-href="#make_client/1" href="#make_client-1"><code>make_client/1</code></a>.</p>
+
+<h3 class="function"><a name="stop_client-1">stop_client/1</a></h3>
+<div class="spec">
+<p><tt>stop_client(Name::atom()) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p>Unregisters and calls <a docgen-rel="seemfa" docgen-href="#close_client/1" href="#close_client-1"><code>close_client/1</code></a> on a named client. This is
+  potentially expensive and should not be called frequently, see <a docgen-rel="seemfa" docgen-href="#start_client/2" href="#start_client-2"><code>start_client/2</code></a> for more details.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
