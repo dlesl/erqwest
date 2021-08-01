@@ -28,6 +28,11 @@ init_per_group(client_cert, Config) ->
   | Config
   ];
 init_per_group(proxy, Config) ->
+  case have_tinyproxy() of
+    true -> Config;
+    false -> {skipped, tinyproxy_not_found}
+  end;
+init_per_group(proxy_no_auth, Config) ->
   {Pid, Proxy} = start_tinyproxy([]),
   [ {tinyproxy, Pid}
   , {proxy, Proxy}
@@ -46,7 +51,9 @@ end_per_group(http, _Config) ->
   ok;
 end_per_group(client_cert, _Config) ->
   ok;
-end_per_group(proxy, Config) ->
+end_per_group(proxy, _Config) ->
+  ok;
+end_per_group(proxy_no_auth, Config) ->
   stop_tinyproxy(?config(tinyproxy, Config));
 end_per_group(proxy_auth, Config) ->
   stop_tinyproxy(?config(tinyproxy, Config)).
@@ -65,20 +72,23 @@ groups() ->
      , without_cert
      ]}
   , {proxy, [],
+     [ {group, proxy_no_auth}
+     , {group, proxy_auth}
+     ]}
+  , {proxy_no_auth, [],
      [ proxy_get
      , proxy_system
      , proxy_no_proxy
      ]}
   , {proxy_auth, [],
-    [ proxy_basic_auth
-    ]}
+     [ proxy_basic_auth
+     ]}
   ].
 
 all() ->
   [ {group, http}
   , {group, client_cert}
   , {group, proxy}
-  , {group, proxy_auth}
   ].
 
 get(_Config) ->
@@ -165,6 +175,12 @@ proxy_basic_auth(Config) ->
   {ok, #{status := 200}} = erqwest:get(C1, <<"https://httpbin.org/get">>).
 
 %% helpers
+
+have_tinyproxy() ->
+  case exec:run("which tinyproxy", [sync]) of
+    {ok, _} -> true;
+    {error, _}-> false
+  end.
 
 start_tinyproxy(ConfigLines0) ->
   ConfigLines = ["Listen 127.0.0.1", "Port 8888"] ++ ConfigLines0 ++ [""],
