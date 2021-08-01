@@ -16,3 +16,9 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - run: nix-shell --run 'make ci'
+    - uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: ct-logs
+        path: _build/test/logs
+        retention-days: 5
