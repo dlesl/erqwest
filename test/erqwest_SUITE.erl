@@ -10,6 +10,7 @@
 
 init_per_suite(Config) ->
   {ok, _} = application:ensure_all_started(erqwest),
+  {ok, _} = application:ensure_all_started(erlexec),
   ok = erqwest:start_client(default),
   Config.
 
@@ -25,12 +26,30 @@ init_per_group(client_cert, Config) ->
   [ {cert, Cert}
   , {pass, <<"badssl.com">>}
   | Config
+  ];
+init_per_group(proxy, Config) ->
+  {Pid, Proxy} = start_tinyproxy([]),
+  [ {tinyproxy, Pid}
+  , {proxy, Proxy}
+  | Config
+  ];
+init_per_group(proxy_auth, Config) ->
+  {Pid, Proxy} = start_tinyproxy(["BasicAuth user password"]),
+  [ {tinyproxy, Pid}
+  , {proxy, Proxy}
+  , {proxy_user, <<"user">>}
+  , {proxy_password, <<"password">>}
+  | Config
   ].
 
-end_per_group(http, Config) ->
-  Config;
-end_per_group(client_cert, Config) ->
-  Config.
+end_per_group(http, _Config) ->
+  ok;
+end_per_group(client_cert, _Config) ->
+  ok;
+end_per_group(proxy, Config) ->
+  stop_tinyproxy(?config(tinyproxy, Config));
+end_per_group(proxy_auth, Config) ->
+  stop_tinyproxy(?config(tinyproxy, Config)).
 
 groups() ->
   [ {http, [parallel],
@@ -41,15 +60,25 @@ groups() ->
      , connect
      , redirects
      ]}
-  , {client_cert, [],
+  , {client_cert, [parallel],
      [ with_cert
      , without_cert
      ]}
+  , {proxy, [],
+     [ proxy_get
+     , proxy_system
+     , proxy_no_proxy
+     ]}
+  , {proxy_auth, [],
+    [ proxy_basic_auth
+    ]}
   ].
 
 all() ->
   [ {group, http}
   , {group, client_cert}
+  , {group, proxy}
+  , {group, proxy_auth}
   ].
 
 get(_Config) ->
@@ -95,3 +124,70 @@ with_cert(Config) ->
 without_cert(_Config) ->
   C = erqwest:make_client(#{}),
   {ok, #{status := 400}} = erqwest:get(C, <<"https://client.badssl.com">>).
+
+proxy_get(Config) ->
+  LogSizeBefore = length(persistent_term:get(proxy_logs)),
+  C = erqwest:make_client(#{proxy => [{all, #{url => ?config(proxy, Config)}}]}),
+  {ok, #{status := 200}} = erqwest:get(C, <<"https://httpbin.org/get">>),
+  timer:sleep(100), % wait for proxy logs to be collected
+  true = length(persistent_term:get(proxy_logs)) > LogSizeBefore.
+
+proxy_system(Config) ->
+  LogSizeBefore = length(persistent_term:get(proxy_logs)),
+  Fun =
+    fun() ->
+        C = erqwest:make_client(),
+        {ok, #{status := 200}} = erqwest:get(C, <<"https://httpbin.org/get">>)
+    end,
+  eval_new_process(Fun, [{"HTTPS_PROXY", ?config(proxy, Config)}]),
+  timer:sleep(100), % wait for proxy logs to be collected
+  true = length(persistent_term:get(proxy_logs)) > LogSizeBefore.
+
+proxy_no_proxy(Config) ->
+  LogSizeBefore = length(persistent_term:get(proxy_logs)),
+  Fun =
+    fun() ->
+        C = erqwest:make_client(#{proxy => no_proxy}),
+        {ok, #{status := 200}} = erqwest:get(C, <<"https://httpbin.org/get">>)
+    end,
+  eval_new_process(Fun, [{"HTTPS_PROXY", ?config(proxy, Config)}]),
+  timer:sleep(100), % wait for proxy logs to be collected
+  false = length(persistent_term:get(proxy_logs)) > LogSizeBefore.
+
+proxy_basic_auth(Config) ->
+  C0 = erqwest:make_client(#{proxy => [{https, #{url => ?config(proxy, Config)}}]}),
+  {error, #{code := connect}} = erqwest:get(C0, <<"https://httpbin.org/get">>),
+  C1 = erqwest:make_client(#{proxy => [{https, #{ url => ?config(proxy, Config)
+                                                , basic_auth =>
+                                                    {?config(proxy_user, Config),
+                                                     ?config(proxy_password, Config)}
+                                                }}]}),
+  {ok, #{status := 200}} = erqwest:get(C1, <<"https://httpbin.org/get">>).
+
+%% helpers
+
+start_tinyproxy(ConfigLines0) ->
+  ConfigLines = ["Listen 127.0.0.1", "Port 8888"] ++ ConfigLines0 ++ [""],
+  ok = file:write_file("tinyproxy.conf", lists:join($\n, ConfigLines)),
+  persistent_term:put(proxy_logs, []),
+  Log = fun(S, _, D) ->
+            ct:log("tinyproxy ~w: ~s", [S, D]),
+            persistent_term:put(proxy_logs, persistent_term:get(proxy_logs) ++ [D])
+        end,
+  {ok, _, Pid} = exec:run("tinyproxy -d -c tinyproxy.conf", [{stdout, Log}, {stderr, Log}]),
+  {Pid, <<"http://127.0.0.1:8888">>}.
+
+stop_tinyproxy(Pid) ->
+  ok = exec:stop(Pid),
+  persistent_term:erase(proxy_logs),
+  ok = file:delete("tinyproxy.conf").
+
+%% reqwest caches the proxy env vars, so we need a new process
+eval_new_process(Fun, Env) ->
+  CodePath = lists:join($ , [P || P <- code:get_path(), not lists:prefix(code:root_dir(), P)]),
+  Term = base64:encode(term_to_binary(Fun)),
+  Cmd = io_lib:format(
+          "erl -pa ~s -noshell -eval '(binary_to_term(base64:decode(<<\"~s\">>)))(), init:stop(0).'",
+          [CodePath, Term]
+         ),
+  {ok, _} = exec:run(iolist_to_binary(Cmd), [sync, {env, Env}, {stdout, print}, {stderr, print}]).

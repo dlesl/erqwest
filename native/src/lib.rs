@@ -10,6 +10,7 @@ use tokio::runtime::{Handle, Runtime};
 
 mod atoms {
     rustler::atoms! {
+        basic_auth,
         additional_root_certs,
         body,
         status,
@@ -20,6 +21,7 @@ mod atoms {
         identity,
         method,
         ok,
+        proxy,
         reason,
         timeout,
         url,
@@ -27,6 +29,24 @@ mod atoms {
         danger_accept_invalid_hostnames,
         danger_accept_invalid_certs
     }
+}
+
+#[derive(NifUnitEnum)]
+enum Proxy {
+    System,
+    NoProxy,
+}
+
+#[derive(NifUnitEnum)]
+enum ProxyType {
+    Http,
+    Https,
+    All,
+}
+
+#[derive(NifMap)]
+struct ProxySpecBase {
+    url: String,
 }
 
 #[derive(NifUnitEnum, Clone, Copy, Debug)]
@@ -57,6 +77,12 @@ impl Into<reqwest::Method> for Method {
             Patch => reqwest::Method::PATCH,
         }
     }
+}
+
+#[derive(NifMap)]
+struct ReqBase {
+    url: String,
+    method: Method,
 }
 
 #[derive(NifUnitEnum)]
@@ -126,33 +152,23 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
         return Err(rustler::Error::BadArg);
     }
     let mut builder = reqwest::ClientBuilder::new();
-    match opts.map_get(atoms::identity().encode(env)) {
-        Ok(term) => {
-            let (pkcs12, pass): (Binary, String) = term.decode()?;
-            builder = builder.identity(
-                Identity::from_pkcs12_der(pkcs12.as_slice(), &pass)
-                    .map_err(|_| rustler::Error::BadArg)?,
+    if let Ok(term) = opts.map_get(atoms::identity().encode(env)) {
+        let (pkcs12, pass): (Binary, String) = term.decode()?;
+        builder = builder.identity(
+            Identity::from_pkcs12_der(pkcs12.as_slice(), &pass)
+                .map_err(|_| rustler::Error::BadArg)?,
+        );
+    };
+    if let Ok(term) = opts.map_get(atoms::use_built_in_root_certs().encode(env)) {
+        builder = builder.tls_built_in_root_certs(term.decode()?);
+    };
+    if let Ok(term) = opts.map_get(atoms::additional_root_certs().encode(env)) {
+        for cert in term.decode::<ListIterator>()? {
+            let cert_bin: Binary = cert.decode()?;
+            builder = builder.add_root_certificate(
+                Certificate::from_der(cert_bin.as_slice()).map_err(|_| rustler::Error::BadArg)?,
             );
         }
-        Err(_) => (),
-    };
-    match opts.map_get(atoms::use_built_in_root_certs().encode(env)) {
-        Ok(term) => {
-            builder = builder.tls_built_in_root_certs(term.decode()?);
-        }
-        Err(_) => (),
-    };
-    match opts.map_get(atoms::additional_root_certs().encode(env)) {
-        Ok(term) => {
-            for cert in term.decode::<ListIterator>()? {
-                let cert_bin: Binary = cert.decode()?;
-                builder = builder.add_root_certificate(
-                    Certificate::from_der(cert_bin.as_slice())
-                        .map_err(|_| rustler::Error::BadArg)?,
-                );
-            }
-        }
-        Err(_) => (),
     };
     let policy = match opts.map_get(atoms::follow_redirects().encode(env)) {
         Ok(term) => match term.decode::<bool>() {
@@ -166,27 +182,46 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
         Err(_) => Ok(reqwest::redirect::Policy::none()),
     }?;
     builder = builder.redirect(policy);
-    match opts.map_get(atoms::danger_accept_invalid_hostnames().encode(env)) {
-        Ok(term) => {
-            builder = builder.danger_accept_invalid_hostnames(term.decode()?);
-        },
-        Err(_) => ()
+    if let Ok(term) = opts.map_get(atoms::danger_accept_invalid_hostnames().encode(env)) {
+        builder = builder.danger_accept_invalid_hostnames(term.decode()?);
     };
-    match opts.map_get(atoms::danger_accept_invalid_certs().encode(env)) {
-        Ok(term) => {
-            builder = builder.danger_accept_invalid_certs(term.decode()?);
-        },
-        Err(_) => ()
+    if let Ok(term) = opts.map_get(atoms::danger_accept_invalid_certs().encode(env)) {
+        builder = builder.danger_accept_invalid_certs(term.decode()?);
     };
-    let client = builder.build().map_err(
-        |e| rustler::Error::RaiseTerm(Box::new(Error::unknown(e.to_string()))),
-    )?;
+    if let Ok(term) = opts.map_get(atoms::proxy().encode(env)) {
+        match term.decode::<Proxy>() {
+            Ok(Proxy::System) => (),
+            Ok(Proxy::NoProxy) => {
+                builder = builder.no_proxy();
+            }
+            Err(_) => {
+                for proxy in term.decode::<ListIterator>()? {
+                    let (proxy_type, proxy_spec): (ProxyType, Term) = proxy.decode()?;
+                    let ProxySpecBase { url } = proxy_spec.decode()?;
+                    let mut proxy = match proxy_type {
+                        ProxyType::Http => reqwest::Proxy::http(url),
+                        ProxyType::Https => reqwest::Proxy::https(url),
+                        ProxyType::All => reqwest::Proxy::all(url),
+                    }
+                    .map_err(|_| rustler::Error::BadArg)?;
+                    if let Ok(term) = proxy_spec.map_get(atoms::basic_auth().encode(env)) {
+                        let (username, password) = term.decode()?;
+                        proxy = proxy.basic_auth(username, password);
+                    }
+                    builder = builder.proxy(proxy);
+                }
+            }
+        }
+    };
+    let client = builder
+        .build()
+        .map_err(|e| rustler::Error::RaiseTerm(Box::new(Error::unknown(e.to_string()))))?;
     Ok(ResourceArc::new(ClientResource(RwLock::new(Some(client)))))
 }
 
 #[rustler::nif]
 fn close_client(resource: ResourceArc<ClientResource>) -> NifResult<Atom> {
-    if let Some(_) = resource.0.write().unwrap().take() {
+    if resource.0.write().unwrap().take().is_some() {
         Ok(atoms::ok())
     } else {
         // already closed
@@ -202,31 +237,27 @@ fn req_async_internal(
     req: Term,
 ) -> NifResult<Atom> {
     let env = req.get_env();
-    let url: String = req.map_get(atoms::url().encode(env))?.decode()?;
-    let method: Method = req.map_get(atoms::method().encode(env))?.decode()?;
+    let ReqBase {url, method} = req.decode()?;
     // returns BadArg if the client was already closed with close_client
-    let client = resource.0.read().unwrap().as_ref().ok_or(rustler::Error::BadArg)?.clone();
+    let client = resource
+        .0
+        .read()
+        .unwrap()
+        .as_ref()
+        .ok_or(rustler::Error::BadArg)?
+        .clone();
     let mut req_builder = client.request(method.into(), url);
-    match req.map_get(atoms::headers().encode(env)) {
-        Ok(term) => {
-            for h in term.decode::<ListIterator>()? {
-                let (k, v): (&str, &str) = h.decode()?;
-                req_builder = req_builder.header(k, v);
-            }
+    if let Ok(term) = req.map_get(atoms::headers().encode(env)) {
+        for h in term.decode::<ListIterator>()? {
+            let (k, v): (&str, &str) = h.decode()?;
+            req_builder = req_builder.header(k, v);
         }
-        Err(_) => (),
     };
-    match req.map_get(atoms::body().encode(env)) {
-        Ok(term) => {
-            req_builder = req_builder.body(term.decode::<Binary>()?.as_slice().to_owned());
-        }
-        Err(_) => (),
+    if let Ok(term) = req.map_get(atoms::body().encode(env)) {
+        req_builder = req_builder.body(term.decode::<Binary>()?.as_slice().to_owned());
     };
-    match req.map_get(atoms::timeout().encode(env)) {
-        Ok(term) => {
-            req_builder = req_builder.timeout(Duration::from_millis(term.decode()?));
-        }
-        Err(_) => (),
+    if let Ok(term) = req.map_get(atoms::timeout().encode(env)) {
+        req_builder = req_builder.timeout(Duration::from_millis(term.decode()?));
     };
     let mut msg_env = OwnedEnv::new();
     let caller_ref = msg_env.save(caller_ref);
@@ -234,11 +265,11 @@ fn req_async_internal(
         let resp = do_req(req_builder).await;
         msg_env.send_and_clear(&pid, |env| {
             let res = resp.and_then(|r| {
-                encode_resp(env.clone(), r).map_err(|_| Error::unknown("failed encoding result"))
+                encode_resp(env, r).map_err(|_| Error::unknown("failed encoding result"))
             });
             let res = match res {
                 Ok(term) => (atoms::ok(), term).encode(env),
-                Err(e) => env.error_tuple(e)
+                Err(e) => env.error_tuple(e),
             };
             let caller_ref = caller_ref.load(env);
             (atoms::erqwest_response(), caller_ref, res).encode(env)
@@ -291,4 +322,8 @@ fn load(env: Env, _info: Term) -> bool {
     true
 }
 
-rustler::init!("erqwest", [make_client, close_client, req_async_internal], load = load);
+rustler::init!(
+    "erqwest",
+    [make_client, close_client, req_async_internal],
+    load = load
+);
