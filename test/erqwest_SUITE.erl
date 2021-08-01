@@ -8,6 +8,9 @@
 
 -include_lib("common_test/include/ct.hrl").
 
+suite() ->
+    [{timetrap, {seconds, 60}}].
+
 init_per_suite(Config) ->
   {ok, _} = application:ensure_all_started(erqwest),
   {ok, _} = application:ensure_all_started(erlexec),
@@ -191,7 +194,18 @@ start_tinyproxy(ConfigLines0) ->
             persistent_term:put(proxy_logs, persistent_term:get(proxy_logs) ++ [D])
         end,
   {ok, _, Pid} = exec:run("tinyproxy -d -c tinyproxy.conf", [{stdout, Log}, {stderr, Log}]),
+  wait_for_port({127, 0, 0, 1}, 8888),
   {Pid, <<"http://127.0.0.1:8888">>}.
+
+wait_for_port(Address, Port) ->
+  case gen_tcp:connect(Address, Port, []) of
+    {ok, Socket} ->
+      gen_tcp:close(Socket),
+      timer:sleep(100); % let the log messages come through
+    {error, _} ->
+      timer:sleep(100),
+      wait_for_port(Address, Port)
+  end.
 
 stop_tinyproxy(Pid) ->
   ok = exec:stop(Pid),
