@@ -1,7 +1,7 @@
 use reqwest::{Certificate, Identity};
 use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
-use rustler::{NifMap, NifUnitEnum, OwnedEnv, ResourceArc};
+use rustler::{NifMap, NifUnitEnum, NifUntaggedEnum, OwnedEnv, ResourceArc};
 use std::io::Write;
 use std::sync::RwLock;
 use std::thread;
@@ -10,25 +10,40 @@ use tokio::runtime::{Handle, Runtime};
 
 mod atoms {
     rustler::atoms! {
-        basic_auth,
         additional_root_certs,
+        basic_auth,
         body,
-        status,
+        connect_timeout,
+        danger_accept_invalid_certs,
+        danger_accept_invalid_hostnames,
         erqwest_response,
         error,
         follow_redirects,
         headers,
+        https_only,
         identity,
         method,
         ok,
+        pool_idle_timeout,
+        pool_max_idle_per_host,
         proxy,
         reason,
+        status,
         timeout,
         url,
-        use_built_in_root_certs,
-        danger_accept_invalid_hostnames,
-        danger_accept_invalid_certs
+        use_built_in_root_certs
     }
+}
+
+#[derive(NifUnitEnum)]
+enum Infinity {
+    Infinity
+}
+
+#[derive(NifUntaggedEnum)]
+enum Timeout {
+    Infinity(Infinity),
+    Timeout(u64)
 }
 
 #[derive(NifUnitEnum)]
@@ -187,6 +202,25 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
     if let Ok(term) = opts.map_get(atoms::danger_accept_invalid_certs().encode(env)) {
         builder = builder.danger_accept_invalid_certs(term.decode()?);
     };
+    if let Ok(term) = opts.map_get(atoms::connect_timeout().encode(env)) {
+        if let Some(timeout) = maybe_timeout(term.decode()?) {
+            builder = builder.connect_timeout(timeout);
+        }
+    };
+    if let Ok(term) = opts.map_get(atoms::timeout().encode(env)) {
+        if let Some(timeout) = maybe_timeout(term.decode()?) {
+            builder = builder.timeout(timeout);
+        }
+    };
+    if let Ok(term) = opts.map_get(atoms::pool_idle_timeout().encode(env)) {
+        builder = builder.pool_idle_timeout(maybe_timeout(term.decode()?));
+    };
+    if let Ok(term) = opts.map_get(atoms::pool_max_idle_per_host().encode(env)) {
+        builder = builder.pool_max_idle_per_host(term.decode()?);
+    };
+    if let Ok(term) = opts.map_get(atoms::https_only().encode(env)) {
+        builder = builder.https_only(term.decode()?);
+    };
     if let Ok(term) = opts.map_get(atoms::proxy().encode(env)) {
         match term.decode::<Proxy>() {
             Ok(Proxy::System) => (),
@@ -236,7 +270,7 @@ fn req_async_internal(
     req: Term,
 ) -> NifResult<Atom> {
     let env = req.get_env();
-    let ReqBase {url, method} = req.decode()?;
+    let ReqBase { url, method } = req.decode()?;
     // returns BadArg if the client was already closed with close_client
     let client = resource
         .0
@@ -256,7 +290,9 @@ fn req_async_internal(
         req_builder = req_builder.body(term.decode::<Binary>()?.as_slice().to_owned());
     };
     if let Ok(term) = req.map_get(atoms::timeout().encode(env)) {
-        req_builder = req_builder.timeout(Duration::from_millis(term.decode()?));
+        if let Some(timeout) = maybe_timeout(term.decode()?) {
+            req_builder = req_builder.timeout(timeout);
+        }
     };
     let mut msg_env = OwnedEnv::new();
     let caller_ref = msg_env.save(caller_ref);
@@ -313,6 +349,13 @@ fn encode_resp(
     map = map.map_put(atoms::headers().encode(env), headers1.encode(env))?;
     map = map.map_put(atoms::body().encode(env), body.release(env).encode(env))?;
     Ok(map.encode(env))
+}
+
+fn maybe_timeout(t: Timeout) -> Option<Duration> {
+    match t {
+        Timeout::Infinity(_) => None,
+        Timeout::Timeout(ms) => Some(Duration::from_millis(ms))
+    }
 }
 
 fn load(env: Env, _info: Term) -> bool {

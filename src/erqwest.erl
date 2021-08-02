@@ -16,44 +16,43 @@
 -on_load(init/0).
 
 -opaque client() :: reference().
--type pkcs12_der() :: binary().
--type password() :: binary().
--type cert_der() :: binary().
--type proxy_spec() :: #{ url := url()
-                       , basic_auth => {Username::binary(), Password::binary()}
-                       }.
--type proxy_type() :: http | https | all.
 
 %% rules are applied in order, see https://docs.rs/reqwest/0.11.4/reqwest/struct.Proxy.html
--type proxy_config() :: [{proxy_type(), proxy_spec()}].
-
--type client_opts() :: #{ identity => {pkcs12_der(), password()}
-                        , follow_redirects => boolean() | non_neg_integer() %% default false
-                        , additional_root_certs => [cert_der()]
+-type proxy_config() :: [{http | https | all, proxy_spec()}].
+-type proxy_spec() :: #{ url := binary()
+                       , basic_auth => {Username::binary(), Password::binary()}
+                       }.
+-type timeout_ms() :: non_neg_integer() | infinity.
+-type client_opts() :: #{ identity => {Pkcs12Der::binary(), Password::binary()}
+                        , follow_redirects => boolean() | non_neg_integer() %% default true
+                        , additional_root_certs => [CertDer::binary()]
                         , use_built_in_root_certs => boolean() %% default true
                         , danger_accept_invalid_hostnames => boolean() %% default false
                         , danger_accept_invalid_certs => boolean() %% default false
                         , proxy => system | no_proxy | proxy_config() %% default system
+                        , connect_timeout => timeout_ms()
+                        , timeout => timeout_ms()
+                        , pool_idle_timeout => timeout_ms()
+                        , pool_max_idle_per_host => non_neg_integer()
+                        , https_only => boolean() %% default false
                         }.
 -type method() :: options | get | post | put | delete | head | trace | connect | patch.
 -type header() :: {binary(), binary()}.
--type url() :: binary().
--type req() :: #{ url := url()
+-type req() :: #{ url := binary()
                 , method := method()
                 , headers => [header()]
                 , body => binary()
-                , timeout => non_neg_integer() %% milliseconds
+                , timeout => timeout_ms()
                 }.
 -type req_opts() :: #{ headers => [header()]
                      , body => binary()
-                     , timeout => non_neg_integer() %% milliseconds
+                     , timeout => timeout_ms()
                      }.
 -type resp() :: #{ status := 100..599
                  , body := binary()
                  , headers := [header()]
                  }.
--type err_code() :: timeout | redirect | connect | request | body | unknown.
--type err() :: #{ code := err_code()
+-type err() :: #{ code := timeout | redirect | connect | request | body | unknown
                 , reason := binary()
                 }.
 
@@ -131,17 +130,17 @@ req(Client, Req) ->
   end.
 
 %% @doc Convenience wrapper for {@link req/2}.
--spec get(client() | atom(), url()) -> {ok, resp()} | {error, err()}.
+-spec get(client() | atom(), binary()) -> {ok, resp()} | {error, err()}.
 get(Client, Url) ->
   get(Client, Url, #{}).
 
 %% @doc Convenience wrapper for {@link req/2}.
--spec get(client() | atom(), url(), req_opts()) -> {ok, resp()} | {error, err()}.
+-spec get(client() | atom(), binary(), req_opts()) -> {ok, resp()} | {error, err()}.
 get(Client, Url, Opts) ->
   req(Client, Opts#{url => Url, method => get}).
 
 %% @doc Convenience wrapper for {@link req/2}.
--spec post(client() | atom(), url(), req_opts()) -> {ok, resp()} | {error, err()}.
+-spec post(client() | atom(), binary(), req_opts()) -> {ok, resp()} | {error, err()}.
 post(Client, Url, Opts) ->
   req(Client, Opts#{url => Url, method => post}).
 

@@ -5,6 +5,7 @@
 -module(erqwest_SUITE).
 
 -compile(export_all).
+-compile(nowarn_export_all).
 
 -include_lib("common_test/include/ct.hrl").
 
@@ -65,8 +66,11 @@ groups() ->
   [ {http, [parallel],
      [ get
      , get_http
+     , https_only
      , post
      , timeout
+     , timeout_default
+     , timeout_infinity
      , connect
      , redirect_follow
      , redirect_no_follow
@@ -106,6 +110,11 @@ get_http(_Config) ->
     erqwest:get(default, <<"http://httpbin.org/get?a=%21%40%23%24%25%5E%26%2A%28%29_%2B">>),
   #{<<"args">> := #{<<"a">> := <<"!@#$%^&*()_+">>}} = jsx:decode(Body).
 
+https_only(_Config) ->
+  C = erqwest:make_client(#{https_only => true}),
+  {error, #{code := unknown}} =
+    erqwest:get(C, <<"http://httpbin.org/get">>).
+
 post(_Config) ->
   {ok, #{status := 200, body := Body}} =
     erqwest:post(default, <<"https://httpbin.org/post">>,
@@ -116,6 +125,14 @@ post(_Config) ->
 timeout(_Config) ->
   {error, #{code := timeout}} =
     erqwest:get(default, <<"https://httpbin.org/delay/1">>, #{timeout => 500}).
+
+timeout_infinity(_Config) ->
+  {ok, #{status := 200}} =
+    erqwest:get(default, <<"https://httpbin.org/delay/1">>, #{timeout => infinity}).
+
+timeout_default(_Config) ->
+  {ok, #{status := 200}} =
+    erqwest:get(default, <<"https://httpbin.org/delay/1">>).
 
 connect(_Config) ->
   {error, #{code := connect}} =
