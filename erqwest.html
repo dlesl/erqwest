@@ -15,24 +15,16 @@
 
 <h2><a name="types">Data Types</a></h2>
 
-<h3 class="typedecl"><a name="type-cert_der">cert_der()</a></h3>
-<p><tt>cert_der() = binary()</tt></p>
-
-
 <h3 class="typedecl"><a name="type-client">client()</a></h3>
 <p><b>abstract datatype</b>: <tt>client()</tt></p>
 
 
 <h3 class="typedecl"><a name="type-client_opts">client_opts()</a></h3>
-<p><tt>client_opts() = #{identity =&gt; {<a href="#type-pkcs12_der">pkcs12_der()</a>, <a href="#type-password">password()</a>}, follow_redirects =&gt; boolean() | non_neg_integer(), additional_root_certs =&gt; [<a href="#type-cert_der">cert_der()</a>], use_built_in_root_certs =&gt; boolean(), danger_accept_invalid_hostnames =&gt; boolean(), danger_accept_invalid_certs =&gt; boolean(), proxy =&gt; system | no_proxy | <a href="#type-proxy_config">proxy_config()</a>}</tt></p>
+<p><tt>client_opts() = #{identity =&gt; {Pkcs12Der::binary(), Password::binary()}, follow_redirects =&gt; boolean() | non_neg_integer(), additional_root_certs =&gt; [CertDer::binary()], use_built_in_root_certs =&gt; boolean(), danger_accept_invalid_hostnames =&gt; boolean(), danger_accept_invalid_certs =&gt; boolean(), proxy =&gt; system | no_proxy | <a href="#type-proxy_config">proxy_config()</a>, connect_timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, pool_idle_timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, pool_max_idle_per_host =&gt; non_neg_integer(), https_only =&gt; boolean()}</tt></p>
 
 
 <h3 class="typedecl"><a name="type-err">err()</a></h3>
-<p><tt>err() = #{code := <a href="#type-err_code">err_code()</a>, reason := binary()}</tt></p>
-
-
-<h3 class="typedecl"><a name="type-err_code">err_code()</a></h3>
-<p><tt>err_code() = timeout | redirect | connect | request | body | unknown</tt></p>
+<p><tt>err() = #{code := timeout | redirect | connect | request | body | unknown, reason := binary()}</tt></p>
 
 
 <h3 class="typedecl"><a name="type-header">header()</a></h3>
@@ -43,40 +35,28 @@
 <p><tt>method() = options | get | post | put | delete | head | trace | connect | patch</tt></p>
 
 
-<h3 class="typedecl"><a name="type-password">password()</a></h3>
-<p><tt>password() = binary()</tt></p>
-
-
-<h3 class="typedecl"><a name="type-pkcs12_der">pkcs12_der()</a></h3>
-<p><tt>pkcs12_der() = binary()</tt></p>
-
-
 <h3 class="typedecl"><a name="type-proxy_config">proxy_config()</a></h3>
-<p><tt>proxy_config() = [{<a href="#type-proxy_type">proxy_type()</a>, <a href="#type-proxy_spec">proxy_spec()</a>}]</tt></p>
+<p><tt>proxy_config() = [{http | https | all, <a href="#type-proxy_spec">proxy_spec()</a>}]</tt></p>
 
 
 <h3 class="typedecl"><a name="type-proxy_spec">proxy_spec()</a></h3>
-<p><tt>proxy_spec() = #{url := <a href="#type-url">url()</a>, basic_auth =&gt; {Username::binary(), Password::binary()}}</tt></p>
-
-
-<h3 class="typedecl"><a name="type-proxy_type">proxy_type()</a></h3>
-<p><tt>proxy_type() = http | https | all</tt></p>
+<p><tt>proxy_spec() = #{url := binary(), basic_auth =&gt; {Username::binary(), Password::binary()}}</tt></p>
 
 
 <h3 class="typedecl"><a name="type-req">req()</a></h3>
-<p><tt>req() = #{url := <a href="#type-url">url()</a>, method := <a href="#type-method">method()</a>, headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; non_neg_integer()}</tt></p>
-<p>  milliseconds</p>
+<p><tt>req() = #{url := binary(), method := <a href="#type-method">method()</a>, headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>}</tt></p>
+
 
 <h3 class="typedecl"><a name="type-req_opts">req_opts()</a></h3>
-<p><tt>req_opts() = #{headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; non_neg_integer()}</tt></p>
-<p>  milliseconds</p>
+<p><tt>req_opts() = #{headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>}</tt></p>
+
 
 <h3 class="typedecl"><a name="type-resp">resp()</a></h3>
 <p><tt>resp() = #{status := 100..599, body := binary(), headers := [<a href="#type-header">header()</a>]}</tt></p>
 
 
-<h3 class="typedecl"><a name="type-url">url()</a></h3>
-<p><tt>url() = binary()</tt></p>
+<h3 class="typedecl"><a name="type-timeout_ms">timeout_ms()</a></h3>
+<p><tt>timeout_ms() = non_neg_integer() | infinity</tt></p>
 
 
 <h2><a name="index">Function Index</a></h2>
@@ -112,13 +92,13 @@ the VM.</p>
 
 <h3 class="function"><a name="get-2">get/2</a></h3>
 <div class="spec">
-<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::<a href="#type-url">url()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::binary()) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
 <h3 class="function"><a name="get-3">get/3</a></h3>
 <div class="spec">
-<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::<a href="#type-url">url()</a>, Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
@@ -136,7 +116,7 @@ the VM.</p>
 
 <h3 class="function"><a name="post-3">post/3</a></h3>
 <div class="spec">
-<p><tt>post(Client::<a href="#type-client">client()</a> | atom(), Url::<a href="#type-url">url()</a>, Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>post(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
