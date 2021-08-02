@@ -1,6 +1,6 @@
 {application, erqwest,
  [{description, "An erlang HTTP client wrapping reqwest"},
-  {vsn, "0.0.1"},
+  {vsn, "0.0.2"},
   {registered, []},
   {applications,
    [kernel,
