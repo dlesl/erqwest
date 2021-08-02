@@ -68,7 +68,9 @@ groups() ->
      , post
      , timeout
      , connect
-     , redirects
+     , redirect_follow
+     , redirect_no_follow
+     , redirect_limited
      ]}
   , {client_cert, [parallel],
      [ with_cert
@@ -119,16 +121,20 @@ connect(_Config) ->
   {error, #{code := connect}} =
     erqwest:get(default, <<"https://httpbin:12345">>).
 
-redirects(_) ->
-  {ok, #{status := 302}} =
-    erqwest:get(erqwest:make_client(),
-                <<"https://nghttp2.org/httpbin/redirect/6">>),
+redirect_follow(_Config) ->
   {ok, #{status := 200}} =
-    erqwest:get(erqwest:make_client(#{follow_redirects => true}),
-                <<"https://nghttp2.org/httpbin/redirect/6">>),
+    erqwest:get(default,
+                <<"https://nghttp2.org/httpbin/redirect/3">>).
+
+redirect_no_follow(_Config) ->
+  {ok, #{status := 302}} =
+    erqwest:get(erqwest:make_client(#{follow_redirects => false}),
+                <<"https://nghttp2.org/httpbin/redirect/3">>).
+
+redirect_limited(_Config) ->
   {error, #{code := redirect}} =
-    erqwest:get(erqwest:make_client(#{follow_redirects => 5}),
-                <<"https://nghttp2.org/httpbin/redirect/6">>).
+    erqwest:get(erqwest:make_client(#{follow_redirects => 2}),
+                <<"https://nghttp2.org/httpbin/redirect/3">>).
 
 with_cert(Config) ->
   C = erqwest:make_client(#{identity => {?config(cert, Config), ?config(pass, Config)}}),

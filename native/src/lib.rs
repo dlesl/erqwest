@@ -170,18 +170,17 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
             );
         }
     };
-    let policy = match opts.map_get(atoms::follow_redirects().encode(env)) {
-        Ok(term) => match term.decode::<bool>() {
+    if let Ok(term) = opts.map_get(atoms::follow_redirects().encode(env)) {
+        let policy = match term.decode::<bool>() {
             Ok(true) => Ok(reqwest::redirect::Policy::default()),
             Ok(false) => Ok(reqwest::redirect::Policy::none()),
             Err(_) => match term.decode::<usize>() {
                 Ok(n) => Ok(reqwest::redirect::Policy::limited(n)),
                 Err(_) => Err(rustler::Error::BadArg),
             },
-        },
-        Err(_) => Ok(reqwest::redirect::Policy::none()),
-    }?;
-    builder = builder.redirect(policy);
+        }?;
+        builder = builder.redirect(policy);
+    };
     if let Ok(term) = opts.map_get(atoms::danger_accept_invalid_hostnames().encode(env)) {
         builder = builder.danger_accept_invalid_hostnames(term.decode()?);
     };
