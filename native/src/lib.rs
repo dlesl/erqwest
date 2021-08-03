@@ -77,10 +77,10 @@ enum Method {
     Patch,
 }
 
-impl Into<reqwest::Method> for Method {
-    fn into(self) -> reqwest::Method {
+impl From<Method> for reqwest::Method {
+    fn from(method: Method) -> Self {
         use Method::*;
-        match self {
+        match method {
             Options => reqwest::Method::OPTIONS,
             Get => reqwest::Method::GET,
             Post => reqwest::Method::POST,
