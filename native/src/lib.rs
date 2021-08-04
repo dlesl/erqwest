@@ -37,13 +37,13 @@ mod atoms {
 
 #[derive(NifUnitEnum)]
 enum Infinity {
-    Infinity
+    Infinity,
 }
 
 #[derive(NifUntaggedEnum)]
 enum Timeout {
     Infinity(Infinity),
-    Timeout(u64)
+    Timeout(u64),
 }
 
 #[derive(NifUnitEnum)]
@@ -354,7 +354,7 @@ fn encode_resp(
 fn maybe_timeout(t: Timeout) -> Option<Duration> {
     match t {
         Timeout::Infinity(_) => None,
-        Timeout::Timeout(ms) => Some(Duration::from_millis(ms))
+        Timeout::Timeout(ms) => Some(Duration::from_millis(ms)),
     }
 }
 
