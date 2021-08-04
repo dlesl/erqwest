@@ -35,6 +35,7 @@
                         , pool_idle_timeout => timeout_ms()
                         , pool_max_idle_per_host => non_neg_integer()
                         , https_only => boolean() %% default false
+                        , cookie_store => boolean() %% default false
                         }.
 -type method() :: options | get | post | put | delete | head | trace | connect | patch.
 -type header() :: {binary(), binary()}.
