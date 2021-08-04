@@ -14,6 +14,7 @@ mod atoms {
         basic_auth,
         body,
         connect_timeout,
+        cookie_store,
         danger_accept_invalid_certs,
         danger_accept_invalid_hostnames,
         erqwest_response,
@@ -31,7 +32,7 @@ mod atoms {
         status,
         timeout,
         url,
-        use_built_in_root_certs
+        use_built_in_root_certs,
     }
 }
 
@@ -220,6 +221,9 @@ fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
     };
     if let Ok(term) = opts.map_get(atoms::https_only().encode(env)) {
         builder = builder.https_only(term.decode()?);
+    }
+    if let Ok(term) = opts.map_get(atoms::cookie_store().encode(env)) {
+        builder = builder.cookie_store(term.decode()?);
     };
     if let Ok(term) = opts.map_get(atoms::proxy().encode(env)) {
         match term.decode::<Proxy>() {

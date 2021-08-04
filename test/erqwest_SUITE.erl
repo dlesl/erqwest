@@ -24,6 +24,8 @@ end_per_suite(_Config) ->
 
 init_per_group(http, Config) ->
   Config;
+init_per_group(cookies, Config) ->
+  Config;
 init_per_group(client_cert, Config) ->
   {ok, #{status := 200, body := Cert}} =
     erqwest:get(default, <<"https://badssl.com/certs/badssl.com-client.p12">>),
@@ -52,6 +54,8 @@ init_per_group(proxy_auth, Config) ->
   ].
 
 end_per_group(http, _Config) ->
+  ok;
+end_per_group(cookies, _Config) ->
   ok;
 end_per_group(client_cert, _Config) ->
   ok;
@@ -92,12 +96,18 @@ groups() ->
   , {proxy_auth, [],
      [ proxy_basic_auth
      ]}
+  , {cookies, [],
+     [ cookies_enabled
+     , cookies_disabled
+     , cookies_default
+     ]}
   ].
 
 all() ->
   [ {group, http}
   , {group, client_cert}
   , {group, proxy}
+  , {group, cookies}
   ].
 
 get(_Config) ->
@@ -199,6 +209,23 @@ proxy_basic_auth(Config) ->
                                                      ?config(proxy_password, Config)}
                                                 }}]}),
   {ok, #{status := 200}} = erqwest:get(C1, <<"https://httpbin.org/get">>).
+
+cookies_enabled(_Config) ->
+  C0 = erqwest:make_client(#{cookie_store => true}),
+  {ok, #{status := 200, body := Body}} = erqwest:get(C0, <<"https://httpbin.org/cookies/set/test_cname/test_cvalue">>),
+  #{<<"cookies">> := #{<<"test_cname">> := <<"test_cvalue">>}} = jsx:decode(Body).
+
+cookies_disabled(_Config) ->
+  C0 = erqwest:make_client(#{cookie_store => false}),
+  {ok, #{status := 200, body := Body}} = erqwest:get(C0, <<"https://httpbin.org/cookies/set/test_cname/test_cvalue">>),
+  Cookies = #{},
+  #{<<"cookies">> := Cookies} = jsx:decode(Body).
+
+cookies_default(_Config) ->
+  C0 = erqwest:make_client(),
+  {ok, #{status := 200, body := Body}} = erqwest:get(C0, <<"https://httpbin.org/cookies/set/test_cname/test_cvalue">>),
+  Cookies = #{},
+  #{<<"cookies">> := Cookies} = jsx:decode(Body).
 
 %% helpers
 
