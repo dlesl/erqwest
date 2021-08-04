@@ -1,3 +1,5 @@
+.PHONY: compile clean ci
+
 PROJECT = erqwest
 
 PROFILE ?= release
@@ -21,7 +23,6 @@ OUTPUT_SO := $(PRIV)/lib$(PROJECT).so
 $(PRIV):
 	mkdir -p $(PRIV)
 
-.PHONY: compile
 compile: $(PRIV)
 	cargo build $(CARGO_OPTS)
 	rm -f $(OUTPUT_SO) # see https://github.com/rusterlium/rustler/issues/128
@@ -30,3 +31,7 @@ compile: $(PRIV)
 clean:
 	rm -f $(OUTPUT_SO)
 	cargo clean
+
+ci:
+	cargo fmt -- --check
+	cargo clippy

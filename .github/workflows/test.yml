@@ -19,6 +19,6 @@ jobs:
     - uses: actions/upload-artifact@v2
       if: always()
       with:
-        name: ct-logs
+        name: ct-logs-${{ matrix.os }}
         path: _build/test/logs
         retention-days: 5

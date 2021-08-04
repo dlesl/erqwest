@@ -7,6 +7,7 @@ pkgs.mkShell {
       rust-analyzer
       rustc
       rustfmt
+      clippy
       openssl
       pkgconfig
       erlang
