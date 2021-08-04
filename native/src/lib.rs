@@ -1,6 +1,7 @@
 use reqwest::{Certificate, Identity};
 use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
+use rustler::env::SavedTerm;
 use rustler::{NifMap, NifUnitEnum, NifUntaggedEnum, OwnedEnv, ResourceArc};
 use std::io::Write;
 use std::sync::RwLock;
@@ -144,6 +145,41 @@ impl From<reqwest::Error> for Error {
         };
         let reason = e.to_string();
         Error { code, reason }
+    }
+}
+
+struct ErqwestResponse {
+    env: Option<OwnedEnv>,
+    caller_ref: SavedTerm,
+    caller_pid: LocalPid
+}
+
+impl ErqwestResponse {
+    pub fn new(caller_ref: Term, caller_pid: LocalPid) -> ErqwestResponse {
+        let env = OwnedEnv::new();
+        let caller_ref = env.save(caller_ref);
+        ErqwestResponse { env: Some(env), caller_ref, caller_pid }
+    }
+    fn send(&mut self, res: Result<(u16, Vec<(String, OwnedBinary)>, OwnedBinary), Error>) {
+        self.env.take().unwrap().send_and_clear(&self.caller_pid, |env| {
+            let res = res.and_then(|r| {
+                encode_resp(env, r).map_err(|_| Error::unknown("failed encoding result"))
+            });
+            let res = match res {
+                Ok(term) => (atoms::ok(), term).encode(env),
+                Err(e) => env.error_tuple(e),
+            };
+            let caller_ref = self.caller_ref.load(env);
+            (atoms::erqwest_response(), caller_ref, res).encode(env)
+        });
+    }
+}
+
+impl Drop for ErqwestResponse {
+    fn drop(&mut self) {
+        if self.env.is_some() {
+            self.send(Err(Error::unknown("future dropped")));
+        }
     }
 }
 
@@ -298,21 +334,10 @@ fn req_async_internal(
             req_builder = req_builder.timeout(timeout);
         }
     };
-    let mut msg_env = OwnedEnv::new();
-    let caller_ref = msg_env.save(caller_ref);
+    let mut response = ErqwestResponse::new(caller_ref, pid);
     let fut = async move {
         let resp = do_req(req_builder).await;
-        msg_env.send_and_clear(&pid, |env| {
-            let res = resp.and_then(|r| {
-                encode_resp(env, r).map_err(|_| Error::unknown("failed encoding result"))
-            });
-            let res = match res {
-                Ok(term) => (atoms::ok(), term).encode(env),
-                Err(e) => env.error_tuple(e),
-            };
-            let caller_ref = caller_ref.load(env);
-            (atoms::erqwest_response(), caller_ref, res).encode(env)
-        });
+        response.send(resp);
     };
     HANDLE.spawn(fut);
     Ok(atoms::ok())
