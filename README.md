@@ -28,6 +28,7 @@ Usage
 ### Start a client
 
 ``` erlang
+ok = application:ensure_started(erqwest),
 ok = erqwest:start_client(default).
 ```
 
@@ -42,7 +43,8 @@ internal connection pool.
 ### Asynchronous interface
 
 ``` erlang
-ok = erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/get">>}).
+erqwest:req_async(default, self(), Ref=make_ref(), 
+                  #{method => get, url => <<"https://httpbin.org/get">>}),
 receive
     {erqwest_response, Ref, {ok, #{status := 200}}} -> ok
 end.
@@ -53,9 +55,3 @@ end.
 
 [Benchmarks](bench)
 -------------------
-
-Todo
-----
-
-* Shut down tokio event loop cleanly
-* Test thoroughly

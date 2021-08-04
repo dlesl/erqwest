@@ -2,6 +2,8 @@
 
 -export([ make_client/0
         , make_client/1
+        , start_runtime/1
+        , stop_runtime/1
         , close_client/1
         , start_client/1
         , start_client/2
@@ -72,7 +74,15 @@ make_client() ->
   make_client(#{}).
 
 -spec make_client(client_opts()) -> client().
-make_client(_Opts) ->
+make_client(Opts) ->
+  make_client(erqwest_runtime:get(), Opts).
+
+%% @private
+start_runtime(_Pid) ->
+  erlang:nif_error(nif_not_loaded).
+
+%% @private
+stop_runtime(_Runtime) ->
   erlang:nif_error(nif_not_loaded).
 
 %% @doc Close a client and idle connections in its pool. Returns immediately,
@@ -163,6 +173,9 @@ post(Client, Url, Opts) ->
 init() ->
   Nif = filename:join([code:priv_dir(erqwest), "liberqwest"]),
   ok = erlang:load_nif(Nif, 0).
+
+make_client(_Runtime, _Opts) ->
+  erlang:nif_error(nif_not_loaded).
 
 req_async_internal(_Client, _Pid, _Ref, _Req) ->
   erlang:nif_error(nif_not_loaded).
