@@ -3,6 +3,7 @@ use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
 use rustler::env::SavedTerm;
 use rustler::{NifMap, NifUnitEnum, NifUntaggedEnum, OwnedEnv, ResourceArc};
+use futures::future::{Abortable, AbortHandle};
 use std::io::Write;
 use std::sync::RwLock;
 use std::thread;
@@ -11,6 +12,7 @@ use tokio::runtime::{Handle, Runtime};
 
 mod atoms {
     rustler::atoms! {
+        cancelled,
         additional_root_certs,
         basic_auth,
         body,
@@ -104,6 +106,7 @@ struct ReqBase {
 
 #[derive(NifUnitEnum)]
 enum ErrorCode {
+    Cancelled,
     Request,
     Redirect,
     Connect,
@@ -178,7 +181,7 @@ impl ErqwestResponse {
 impl Drop for ErqwestResponse {
     fn drop(&mut self) {
         if self.env.is_some() {
-            self.send(Err(Error::unknown("future dropped")));
+            self.send(Err(Error { code: ErrorCode::Cancelled, reason: "future dropped".into() }));
         }
     }
 }
@@ -196,6 +199,8 @@ lazy_static::lazy_static! {
 }
 
 struct ClientResource(RwLock<Option<reqwest::Client>>);
+
+struct AbortResource(AbortHandle);
 
 #[rustler::nif]
 fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
@@ -308,7 +313,7 @@ fn req_async_internal(
     pid: LocalPid,
     caller_ref: Term,
     req: Term,
-) -> NifResult<Atom> {
+) -> NifResult<ResourceArc<AbortResource>> {
     let env = req.get_env();
     let ReqBase { url, method } = req.decode()?;
     // returns BadArg if the client was already closed with close_client
@@ -339,8 +344,9 @@ fn req_async_internal(
         let resp = do_req(req_builder).await;
         response.send(resp);
     };
-    HANDLE.spawn(fut);
-    Ok(atoms::ok())
+    let (abort_handle, abort_registration) = AbortHandle::new_pair();
+    HANDLE.spawn(Abortable::new(fut, abort_registration));
+    Ok(ResourceArc::new(AbortResource(abort_handle)))
 }
 
 async fn do_req(
@@ -380,6 +386,12 @@ fn encode_resp(
     Ok(map.encode(env))
 }
 
+#[rustler::nif]
+fn cancel(abort_handle: ResourceArc<AbortResource>) -> NifResult<Atom> {
+    abort_handle.0.abort();
+    Ok(atoms::ok())
+}
+
 fn maybe_timeout(t: Timeout) -> Option<Duration> {
     match t {
         Timeout::Infinity(_) => None,
@@ -390,11 +402,12 @@ fn maybe_timeout(t: Timeout) -> Option<Duration> {
 fn load(env: Env, _info: Term) -> bool {
     lazy_static::initialize(&HANDLE);
     rustler::resource!(ClientResource, env);
+    rustler::resource!(AbortResource, env);
     true
 }
 
 rustler::init!(
     "erqwest",
-    [make_client, close_client, req_async_internal],
+    [make_client, close_client, req_async_internal, cancel],
     load = load
 );

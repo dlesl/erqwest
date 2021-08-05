@@ -11,11 +11,13 @@
         , get/2
         , get/3
         , post/3
+        , cancel/1
         ]).
 
 -on_load(init/0).
 
 -opaque client() :: reference().
+-opaque req_handle() :: reference().
 
 %% rules are applied in order, see https://docs.rs/reqwest/0.11.4/reqwest/struct.Proxy.html
 -type proxy_config() :: [{http | https | all, proxy_spec()}].
@@ -53,11 +55,12 @@
                  , body := binary()
                  , headers := [header()]
                  }.
--type err() :: #{ code := timeout | redirect | connect | request | body | unknown
+-type err() :: #{ code := timeout | redirect | connect | request | body | cancelled | unknown
                 , reason := binary()
                 }.
 
 -export_type([ client/0
+             , req_handle/0
              , method/0
              , req/0
              , resp/0
@@ -109,15 +112,25 @@ stop_client(Name) ->
 
 %% @doc Make an asynchronous request.
 %%
-%% Sends `{erqwest_response, Ref, {ok, resp()} | {error, err()}}' to `Pid'.
+%% A single response of the form
+%% `{erqwest_response, Ref, {ok, resp()} | {error, err()}}' is guaranteed to be
+%% sent to `Pid'.
 %%
 %% Fails with reason badarg if any argument is invalid or if the client has
 %% already been closed.
--spec req_async(client() | atom(), pid(), any(), req()) -> ok.
+-spec req_async(client() | atom(), pid(), any(), req()) -> req_handle().
 req_async(Client, Pid, Ref, Req) when is_atom(Client) ->
   req_async_internal(persistent_term:get({?MODULE, Client}), Pid, Ref, Req);
 req_async(Client, Pid, Ref, Req) ->
   req_async_internal(Client, Pid, Ref, Req).
+
+%% @doc Cancel an asynchronous request. A response will still be sent, with
+%% payload `{error, #{code => cancelled}}` or another payload depending on the
+%% state of the connection. Has no effect if the request has already completed
+%% or was already cancelled.
+-spec cancel(req_handle()) -> ok.
+cancel(_Handle) ->
+  erlang:nif_error(nif_not_loaded).
 
 %% @doc Make a synchronous request.
 %%
@@ -125,7 +138,7 @@ req_async(Client, Pid, Ref, Req) ->
 %% already been closed.
 -spec req(client() | atom(), req()) -> {ok, resp()} | {error, err()}.
 req(Client, Req) ->
-  ok = req_async(Client, self(), Ref=make_ref(), Req),
+  req_async(Client, self(), Ref=make_ref(), Req),
   receive
     {erqwest_response, Ref, Resp} -> Resp
   end.
