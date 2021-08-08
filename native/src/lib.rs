@@ -1,7 +1,9 @@
 use reqwest::{Certificate, Identity};
 use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
+use rustler::env::SavedTerm;
 use rustler::{NifMap, NifUnitEnum, NifUntaggedEnum, OwnedEnv, ResourceArc};
+use futures::future::{Abortable, AbortHandle};
 use std::io::Write;
 use std::sync::RwLock;
 use std::thread;
@@ -10,6 +12,7 @@ use tokio::runtime::{Handle, Runtime};
 
 mod atoms {
     rustler::atoms! {
+        cancelled,
         additional_root_certs,
         basic_auth,
         body,
@@ -103,6 +106,7 @@ struct ReqBase {
 
 #[derive(NifUnitEnum)]
 enum ErrorCode {
+    Cancelled,
     Request,
     Redirect,
     Connect,
@@ -147,6 +151,41 @@ impl From<reqwest::Error> for Error {
     }
 }
 
+struct ErqwestResponse {
+    env: Option<OwnedEnv>,
+    caller_ref: SavedTerm,
+    caller_pid: LocalPid
+}
+
+impl ErqwestResponse {
+    pub fn new(caller_ref: Term, caller_pid: LocalPid) -> ErqwestResponse {
+        let env = OwnedEnv::new();
+        let caller_ref = env.save(caller_ref);
+        ErqwestResponse { env: Some(env), caller_ref, caller_pid }
+    }
+    fn send(&mut self, res: Result<(u16, Vec<(String, OwnedBinary)>, OwnedBinary), Error>) {
+        self.env.take().unwrap().send_and_clear(&self.caller_pid, |env| {
+            let res = res.and_then(|r| {
+                encode_resp(env, r).map_err(|_| Error::unknown("failed encoding result"))
+            });
+            let res = match res {
+                Ok(term) => (atoms::ok(), term).encode(env),
+                Err(e) => env.error_tuple(e),
+            };
+            let caller_ref = self.caller_ref.load(env);
+            (atoms::erqwest_response(), caller_ref, res).encode(env)
+        });
+    }
+}
+
+impl Drop for ErqwestResponse {
+    fn drop(&mut self) {
+        if self.env.is_some() {
+            self.send(Err(Error { code: ErrorCode::Cancelled, reason: "future dropped".into() }));
+        }
+    }
+}
+
 lazy_static::lazy_static! {
     static ref HANDLE: Handle = {
         let (handle_tx, handle_rx) = std::sync::mpsc::channel();
@@ -160,6 +199,8 @@ lazy_static::lazy_static! {
 }
 
 struct ClientResource(RwLock<Option<reqwest::Client>>);
+
+struct AbortResource(AbortHandle);
 
 #[rustler::nif]
 fn make_client(env: Env, opts: Term) -> NifResult<ResourceArc<ClientResource>> {
@@ -272,7 +313,7 @@ fn req_async_internal(
     pid: LocalPid,
     caller_ref: Term,
     req: Term,
-) -> NifResult<Atom> {
+) -> NifResult<ResourceArc<AbortResource>> {
     let env = req.get_env();
     let ReqBase { url, method } = req.decode()?;
     // returns BadArg if the client was already closed with close_client
@@ -298,24 +339,14 @@ fn req_async_internal(
             req_builder = req_builder.timeout(timeout);
         }
     };
-    let mut msg_env = OwnedEnv::new();
-    let caller_ref = msg_env.save(caller_ref);
+    let mut response = ErqwestResponse::new(caller_ref, pid);
     let fut = async move {
         let resp = do_req(req_builder).await;
-        msg_env.send_and_clear(&pid, |env| {
-            let res = resp.and_then(|r| {
-                encode_resp(env, r).map_err(|_| Error::unknown("failed encoding result"))
-            });
-            let res = match res {
-                Ok(term) => (atoms::ok(), term).encode(env),
-                Err(e) => env.error_tuple(e),
-            };
-            let caller_ref = caller_ref.load(env);
-            (atoms::erqwest_response(), caller_ref, res).encode(env)
-        });
+        response.send(resp);
     };
-    HANDLE.spawn(fut);
-    Ok(atoms::ok())
+    let (abort_handle, abort_registration) = AbortHandle::new_pair();
+    HANDLE.spawn(Abortable::new(fut, abort_registration));
+    Ok(ResourceArc::new(AbortResource(abort_handle)))
 }
 
 async fn do_req(
@@ -355,6 +386,12 @@ fn encode_resp(
     Ok(map.encode(env))
 }
 
+#[rustler::nif]
+fn cancel(abort_handle: ResourceArc<AbortResource>) -> NifResult<Atom> {
+    abort_handle.0.abort();
+    Ok(atoms::ok())
+}
+
 fn maybe_timeout(t: Timeout) -> Option<Duration> {
     match t {
         Timeout::Infinity(_) => None,
@@ -365,11 +402,12 @@ fn maybe_timeout(t: Timeout) -> Option<Duration> {
 fn load(env: Env, _info: Term) -> bool {
     lazy_static::initialize(&HANDLE);
     rustler::resource!(ClientResource, env);
+    rustler::resource!(AbortResource, env);
     true
 }
 
 rustler::init!(
     "erqwest",
-    [make_client, close_client, req_async_internal],
+    [make_client, close_client, req_async_internal, cancel],
     load = load
 );

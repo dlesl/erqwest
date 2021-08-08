@@ -10,7 +10,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 suite() ->
-    [{timetrap, {seconds, 60}}].
+  [{timetrap, {seconds, 60}}].
 
 init_per_suite(Config) ->
   {ok, _} = application:ensure_all_started(erqwest),
@@ -25,6 +25,8 @@ end_per_suite(_Config) ->
 init_per_group(http, Config) ->
   Config;
 init_per_group(cookies, Config) ->
+  Config;
+init_per_group(async, Config) ->
   Config;
 init_per_group(client_cert, Config) ->
   {ok, #{status := 200, body := Cert}} =
@@ -56,6 +58,8 @@ init_per_group(proxy_auth, Config) ->
 end_per_group(http, _Config) ->
   ok;
 end_per_group(cookies, _Config) ->
+  ok;
+end_per_group(async, _Config) ->
   ok;
 end_per_group(client_cert, _Config) ->
   ok;
@@ -96,10 +100,16 @@ groups() ->
   , {proxy_auth, [],
      [ proxy_basic_auth
      ]}
-  , {cookies, [],
+  , {cookies, [parallel],
      [ cookies_enabled
      , cookies_disabled
      , cookies_default
+     ]}
+  , {async, [parallel],
+     [ async_get
+     , async_cancel
+     , async_cancel_after_response
+     , async_race_requests
      ]}
   ].
 
@@ -108,6 +118,7 @@ all() ->
   , {group, client_cert}
   , {group, proxy}
   , {group, cookies}
+  , {group, async}
   ].
 
 get(_Config) ->
@@ -226,6 +237,60 @@ cookies_default(_Config) ->
   {ok, #{status := 200, body := Body}} = erqwest:get(C0, <<"https://httpbin.org/cookies/set/test_cname/test_cvalue">>),
   Cookies = #{},
   #{<<"cookies">> := Cookies} = jsx:decode(Body).
+
+async_get(_Config) ->
+  erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/get">>}),
+  receive
+    {erqwest_response, Ref, Res} ->
+      {ok, #{status := 200}} = Res
+  end.
+
+async_cancel(_Config) ->
+  Handle =
+    erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/1">>}),
+  ok = erqwest:cancel(Handle),
+  receive
+    {erqwest_response, Ref, Res} ->
+      {error, #{code := cancelled}} = Res
+  end,
+  %% cancelling again has no effect
+  ok = erqwest:cancel(Handle).
+
+async_cancel_after_response(_Config) ->
+  Handle =
+    erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/get">>}),
+  receive
+    {erqwest_response, Ref, Res} ->
+      {ok, #{status := 200}} = Res
+  end,
+  ok = erqwest:cancel(Handle),
+  receive
+    {erqwest_response, _, _} ->
+      ct:fail(unexpected_response)
+  after 100 ->
+      ok
+  end.
+
+async_race_requests(_Config) ->
+  Refs0 =
+    lists:map(
+      fun(Delay) ->
+          Url = <<"https://httpbin.org/delay/", (integer_to_binary(Delay))/binary>>,
+          Handle = erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => Url}),
+          {Ref, {Handle, Delay}}
+      end,
+      [1, 5, 5, 5]
+     ),
+  Refs = maps:from_list(Refs0),
+  receive
+    {erqwest_response, FirstRef, FirstRes} ->
+      #{FirstRef := {_, 1}} = Refs,
+      [erqwest:cancel(H) || {H, _} <- maps:values(Refs)],
+      {ok, #{status := 200}} = FirstRes
+  end,
+  Rest = [receive {erqwest_response, R, Res} -> Res end
+          || R <- maps:keys(Refs), R =/= FirstRef],
+  [{error, #{code := cancelled}} = Res || Res <- Rest].
 
 %% helpers
 
