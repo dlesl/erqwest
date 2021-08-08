@@ -24,7 +24,7 @@
 
 
 <h3 class="typedecl"><a name="type-err">err()</a></h3>
-<p><tt>err() = #{code := timeout | redirect | connect | request | body | unknown, reason := binary()}</tt></p>
+<p><tt>err() = #{code := timeout | redirect | connect | request | body | cancelled | unknown, reason := binary()}</tt></p>
 
 
 <h3 class="typedecl"><a name="type-header">header()</a></h3>
@@ -47,6 +47,10 @@
 <p><tt>req() = #{url := binary(), method := <a href="#type-method">method()</a>, headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>}</tt></p>
 
 
+<h3 class="typedecl"><a name="type-req_handle">req_handle()</a></h3>
+<p><b>abstract datatype</b>: <tt>req_handle()</tt></p>
+
+
 <h3 class="typedecl"><a name="type-req_opts">req_opts()</a></h3>
 <p><tt>req_opts() = #{headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>}</tt></p>
 
@@ -60,7 +64,8 @@
 
 
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#close_client-1">close_client/1</a></td><td>Close a client and idle connections in its pool.</td></tr>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cancel-1">cancel/1</a></td><td>Cancel an asynchronous request.</td></tr>
+<tr><td valign="top"><a href="#close_client-1">close_client/1</a></td><td>Close a client and idle connections in its pool.</td></tr>
 <tr><td valign="top"><a href="#get-2">get/2</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#get-3">get/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#make_client-0">make_client/0</a></td><td></td></tr>
@@ -75,6 +80,15 @@
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="cancel-1">cancel/1</a></h3>
+<div class="spec">
+<p><tt>cancel(Handle::<a href="#type-req_handle">req_handle()</a>) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p>Cancel an asynchronous request. A response will still be sent, with
+  payload <code>{error, #{code =&gt; cancelled}}</code> or another payload depending on the
+  state of the connection. Has no effect if the request has already completed
+  or was already cancelled.</p>
 
 <h3 class="function"><a name="close_client-1">close_client/1</a></h3>
 <div class="spec">
@@ -131,11 +145,13 @@ the VM.</p>
 
 <h3 class="function"><a name="req_async-4">req_async/4</a></h3>
 <div class="spec">
-<p><tt>req_async(Client::<a href="#type-client">client()</a> | atom(), Pid::pid(), Ref::any(), Req::<a href="#type-req">req()</a>) -&gt; ok</tt><br></p>
+<p><tt>req_async(Client::<a href="#type-client">client()</a> | atom(), Pid::pid(), Ref::any(), Req::<a href="#type-req">req()</a>) -&gt; <a href="#type-req_handle">req_handle()</a></tt><br></p>
 <p> </p>
 </div><p><p>Make an asynchronous request.</p>
  
-  <p>Sends <code>{erqwest_response, Ref, {ok, resp()} | {error, err()}}</code> to <code>Pid</code>.</p>
+  <p>A single response of the form
+  <code>{erqwest_response, Ref, {ok, resp()} | {error, err()}}</code> is guaranteed to be
+  sent to <code>Pid</code>.</p>
  
   Fails with reason badarg if any argument is invalid or if the client has
   already been closed.</p>
