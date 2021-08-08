@@ -76,6 +76,7 @@ groups() ->
      , get_http
      , https_only
      , post
+     , json
      , timeout
      , timeout_default
      , timeout_infinity
@@ -142,6 +143,15 @@ post(_Config) ->
                  #{ headers => [{<<"Content-Type">>, <<"application/json">>}]
                   , body => <<"!@#$%^&*()">>}),
   #{<<"data">> := <<"!@#$%^&*()">>} = jsx:decode(Body).
+
+json(_Config) ->
+  Json = #{<<"data">> => <<"!@#$%^&*()">>},
+  {ok, #{status := 200, body := Body, headers := Headers}} =
+  erqwest:post(default, <<"https://httpbin.org/post">>,
+                 #{json => Json}),
+  #{<<"data">> := JsonData} = jsx:decode(Body),
+  {<<"content-type">>, <<"application/json">>} = proplists:lookup(<<"content-type">>, Headers),
+  Json = jsx:decode(JsonData).
 
 timeout(_Config) ->
   {error, #{code := timeout}} =
