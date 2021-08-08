@@ -125,7 +125,7 @@ req_async(Client, Pid, Ref, Req) ->
   req_async_internal(Client, Pid, Ref, Req).
 
 %% @doc Cancel an asynchronous request. A response will still be sent, with
-%% payload `{error, #{code => cancelled}}` or another payload depending on the
+%% payload `{error, #{code => cancelled}}' or another payload depending on the
 %% state of the connection. Has no effect if the request has already completed
 %% or was already cancelled.
 -spec cancel(req_handle()) -> ok.
