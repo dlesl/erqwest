@@ -15,7 +15,7 @@ jobs:
     - uses: cachix/install-nix-action@v13
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix-shell --run 'make ci'
+    - run: nix-shell --pure --run 'make ci'
     - uses: actions/upload-artifact@v2
       if: always()
       with:
