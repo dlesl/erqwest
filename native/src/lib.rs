@@ -9,6 +9,7 @@ use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
 use tokio::runtime::{Handle, Runtime};
+use bytes::BufMut;
 
 mod atoms {
     rustler::atoms! {
@@ -26,6 +27,7 @@ mod atoms {
         headers,
         https_only,
         identity,
+        json,
         method,
         ok,
         pool_idle_timeout,
@@ -333,7 +335,14 @@ fn req_async_internal(
     };
     if let Ok(term) = req.map_get(atoms::body().encode(env)) {
         req_builder = req_builder.body(term.decode::<Binary>()?.as_slice().to_owned());
-    };
+    } else if let Ok(term) = req.map_get(atoms::json().encode(env)) {
+        let mut buf = vec![].writer();
+        serde_transcode::transcode(
+            serde_rustler::Deserializer::from(term),
+            &mut serde_json::Serializer::new(&mut buf)
+        ).or(Err(rustler::Error::RaiseAtom("json_encode_error")))?;
+        req_builder = req_builder.body(buf.into_inner());
+    }
     if let Ok(term) = req.map_get(atoms::timeout().encode(env)) {
         if let Some(timeout) = maybe_timeout(term.decode()?) {
             req_builder = req_builder.timeout(timeout);

@@ -118,11 +118,16 @@ dependencies = [
 name = "erqwest"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "futures",
  "lazy_static",
  "reqwest",
  "rustler",
  "rustler_codegen",
+ "serde",
+ "serde-transcode",
+ "serde_json",
+ "serde_rustler",
  "tokio",
 ]
 
@@ -617,6 +622,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-error"
+version = "1.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
+
+[[package]]
 name = "quote"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -825,6 +836,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-transcode"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "590c0e25c2a5bb6e85bf5c1bce768ceb86b316e7a01bdf07d2cb4ec2271990e2"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -843,6 +863,17 @@ checksum = "799e97dc9fdae36a5c8b8f2cae9ce2ee9fdce2058c57a93e6099d919fd982f79"
 dependencies = [
  "itoa",
  "ryu",
+ "serde",
+]
+
+[[package]]
+name = "serde_rustler"
+version = "0.1.0"
+source = "git+https://github.com/satoren/serde_rustler?branch=rustler_0.22#0273c8aff4d9407f046dd9bf5d5f61d309d9a55f"
+dependencies = [
+ "lazy_static",
+ "quick-error",
+ "rustler",
  "serde",
 ]
 

@@ -45,10 +45,12 @@
                 , method := method()
                 , headers => [header()]
                 , body => binary()
+                , json => term()
                 , timeout => timeout_ms()
                 }.
 -type req_opts() :: #{ headers => [header()]
                      , body => binary()
+                     , json => term()
                      , timeout => timeout_ms()
                      }.
 -type resp() :: #{ status := 100..599
