@@ -2,6 +2,7 @@
  [{description, "An erlang HTTP client wrapping reqwest"},
   {vsn, "0.0.2"},
   {registered, []},
+  {mod, {erqwest_app, []}},
   {applications,
    [kernel,
     stdlib

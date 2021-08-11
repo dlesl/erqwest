@@ -8,6 +8,7 @@
 -compile(nowarn_export_all).
 
 -include_lib("common_test/include/ct.hrl").
+-include_lib("stdlib/include/assert.hrl").
 
 suite() ->
   [{timetrap, {seconds, 60}}].
@@ -53,7 +54,10 @@ init_per_group(proxy_auth, Config) ->
   , {proxy_user, <<"user">>}
   , {proxy_password, <<"password">>}
   | Config
-  ].
+  ];
+init_per_group(runtime, Config) ->
+  application:stop(erqwest),
+  Config.
 
 end_per_group(http, _Config) ->
   ok;
@@ -68,7 +72,9 @@ end_per_group(proxy, _Config) ->
 end_per_group(proxy_no_auth, Config) ->
   stop_tinyproxy(?config(tinyproxy, Config));
 end_per_group(proxy_auth, Config) ->
-  stop_tinyproxy(?config(tinyproxy, Config)).
+  stop_tinyproxy(?config(tinyproxy, Config));
+end_per_group(runtime, _Config) ->
+  ok = application:start(erqwest).
 
 groups() ->
   [ {http, [parallel],
@@ -111,6 +117,13 @@ groups() ->
      , async_cancel_after_response
      , async_race_requests
      ]}
+  , {runtime, [],
+     [ runtime_stopped_make_client
+     , runtime_stopped_inflight_request
+     , runtime_stopped_new_request
+     , runtime_unexpected_exit
+     , runtime_multiple_runtimes
+     ]}
   ].
 
 all() ->
@@ -119,6 +132,7 @@ all() ->
   , {group, proxy}
   , {group, cookies}
   , {group, async}
+  , {group, runtime}
   ].
 
 get(_Config) ->
@@ -193,6 +207,7 @@ proxy_system(Config) ->
   LogSizeBefore = length(persistent_term:get(proxy_logs)),
   Fun =
     fun() ->
+        {ok, _} = application:ensure_all_started(erqwest),
         C = erqwest:make_client(),
         {ok, #{status := 200}} = erqwest:get(C, <<"https://httpbin.org/get">>)
     end,
@@ -204,6 +219,7 @@ proxy_no_proxy(Config) ->
   LogSizeBefore = length(persistent_term:get(proxy_logs)),
   Fun =
     fun() ->
+        {ok, _} = application:ensure_all_started(erqwest),
         C = erqwest:make_client(#{proxy => no_proxy}),
         {ok, #{status := 200}} = erqwest:get(C, <<"https://httpbin.org/get">>)
     end,
@@ -291,6 +307,62 @@ async_race_requests(_Config) ->
   Rest = [receive {erqwest_response, R, Res} -> Res end
           || R <- maps:keys(Refs), R =/= FirstRef],
   [{error, #{code := cancelled}} = Res || Res <- Rest].
+
+runtime_stopped_make_client(_Config) ->
+  ok = application:start(erqwest),
+  erqwest:make_client(),
+  ok = application:stop(erqwest),
+  ?assertException(error, badarg, erqwest:make_client()).
+
+runtime_stopped_inflight_request(_Config) ->
+  ok = application:start(erqwest),
+  C = erqwest:make_client(),
+  %% two requests that will hopefully be at different stages
+  erqwest:req_async(C, self(), Ref0=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/5">>}),
+  timer:sleep(1000),
+  erqwest:req_async(C, self(), Ref1=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/5">>}),
+  ok = application:stop(erqwest),
+  receive
+    {erqwest_response, Ref0, Resp0} ->
+      %% the error could vary depending on what stage the connection was at
+      {error, #{}} = Resp0
+  end,
+  receive
+    {erqwest_response, Ref1, Resp1} ->
+      {error, #{}} = Resp1
+  end.
+
+runtime_stopped_new_request(_Config) ->
+  ok = application:start(erqwest),
+  C = erqwest:make_client(),
+  ok = application:stop(erqwest),
+  ?assertException(error, bad_runtime, erqwest:get(C, <<"https://httpbin.org/get">>)).
+
+runtime_unexpected_exit(_Config) ->
+  process_flag(trap_exit, true),
+  {ok, Pid} = erqwest_runtime:start_link(),
+  erqwest:stop_runtime(erqwest_runtime:get()),
+  receive
+    {'EXIT', Pid, erqwest_runtime_failure} -> ok
+  end.
+
+runtime_multiple_runtimes(_Config) ->
+  process_flag(trap_exit, true),
+  {ok, Pid1} = erqwest_runtime:start_link(),
+  C1 = erqwest:make_client(),
+  E1 = erqwest_runtime:get(),
+  %% brutally kill the gen_server so it doesn't stop the runtime. As long as we
+  %% have a live reference to the runtime it won't be GC'd.
+  exit(Pid1, kill),
+  receive
+    {'EXIT', Pid1, killed} -> ok
+  end,
+  {ok, Pid2} = erqwest_runtime:start_link(),
+  C2 = erqwest:make_client(),
+  {ok, _} = erqwest:get(C1, <<"https://httpbin.org/get">>),
+  {ok, _} = erqwest:get(C2, <<"https://httpbin.org/get">>),
+  erqwest:stop_runtime(E1),
+  ok = gen_server:stop(Pid2).
 
 %% helpers
 
