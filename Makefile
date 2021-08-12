@@ -1,9 +1,10 @@
-.PHONY: ci ct dialyzer bench
+.PHONY: ci ct dialyzer docs clean
 
 all:
 	rebar3 compile
 
-ci: ct dialyzer
+ci:
+	$(MAKE) ct dialyzer ERQWEST_FEATURES=cookies
 
 # using PROFILE=debug speeds up the cargo build significantly
 ct:
@@ -12,6 +13,8 @@ ct:
 dialyzer:
 	PROFILE=debug rebar3 as test dialyzer
 
-.PHONY: docs
 docs:
 	PROFILE=debug rebar3 edoc
+
+clean:
+	rebar3 clean

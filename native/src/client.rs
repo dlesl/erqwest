@@ -95,8 +95,13 @@ fn make_client(
     if let Ok(term) = opts.map_get(atoms::https_only().encode(env)) {
         builder = builder.https_only(term.decode()?);
     };
+    #[cfg(feature = "cookies")]
     if let Ok(term) = opts.map_get(atoms::cookie_store().encode(env)) {
         builder = builder.cookie_store(term.decode()?);
+    };
+    #[cfg(not(feature = "cookies"))]
+    if opts.map_get(atoms::cookie_store().encode(env)).is_ok() {
+        return Err(rustler::Error::RaiseAtom("cookies_not_available"));
     };
     if let Ok(term) = opts.map_get(atoms::proxy().encode(env)) {
         match term.decode::<Proxy>() {

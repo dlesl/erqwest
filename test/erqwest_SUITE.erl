@@ -26,7 +26,10 @@ end_per_suite(_Config) ->
 init_per_group(http, Config) ->
   Config;
 init_per_group(cookies, Config) ->
-  Config;
+  case erqwest:feature(cookies) of
+    true -> Config;
+    false -> {skipped, cookies_not_enabled}
+  end;
 init_per_group(async, Config) ->
   Config;
 init_per_group(client_cert, Config) ->

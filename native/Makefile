@@ -2,6 +2,8 @@ PROJECT = erqwest
 
 PROFILE ?= release
 
+ERQWEST_FEATURES ?=
+
 ifeq ($(PROFILE), release)
 	CARGO_OPTS += --release
 endif
@@ -23,7 +25,7 @@ $(PRIV):
 
 .PHONY: compile
 compile: $(PRIV)
-	cargo build $(CARGO_OPTS)
+	cargo build $(CARGO_OPTS) --features "$(ERQWEST_FEATURES)"
 	rm -f $(OUTPUT_SO) # see https://github.com/rusterlium/rustler/issues/128
 	cp $(RUST_SO) $(OUTPUT_SO)
 

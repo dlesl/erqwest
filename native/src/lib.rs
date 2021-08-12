@@ -1,4 +1,4 @@
-use rustler::{Env, Term};
+use rustler::{Env, NifUnitEnum, Term, nif};
 
 mod client;
 mod req;
@@ -43,6 +43,19 @@ fn load(env: Env, _info: Term) -> bool {
     true
 }
 
+#[derive(NifUnitEnum)]
+enum Feature {
+    Cookies,
+}
+
+#[nif]
+fn feature(f: Feature) -> bool {
+    use Feature::*;
+    match f {
+        Cookies => cfg!(feature = "cookies"),
+    }
+}
+
 rustler::init!(
     "erqwest",
     [
@@ -51,7 +64,8 @@ rustler::init!(
         client::make_client,
         client::close_client,
         req::req_async_internal,
-        req::cancel
+        req::cancel,
+        feature
     ],
     load = load
 );

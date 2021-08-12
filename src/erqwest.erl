@@ -14,6 +14,7 @@
         , get/3
         , post/3
         , cancel/1
+        , feature/1
         ]).
 
 -on_load(init/0).
@@ -60,6 +61,7 @@
 -type err() :: #{ code := timeout | redirect | connect | request | body | cancelled | unknown
                 , reason := binary()
                 }.
+-type feature() :: cookies.
 
 -export_type([ client/0
              , req_handle/0
@@ -167,6 +169,13 @@ get(Client, Url, Opts) ->
 -spec post(client() | atom(), binary(), req_opts()) -> {ok, resp()} | {error, err()}.
 post(Client, Url, Opts) ->
   req(Client, Opts#{url => Url, method => post}).
+
+%% @doc Determines whether a compile-time feature is available. Enable features
+%% by adding them to the environment variable `ERQWEST_FEATURES' (comma
+%% separated list) at build time.
+-spec feature(feature()) -> boolean().
+feature(_Feature) ->
+  erlang:nif_error(nif_not_loaded).
 
 %% internal
 
