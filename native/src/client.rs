@@ -103,6 +103,14 @@ fn make_client(
     if opts.map_get(atoms::cookie_store().encode(env)).is_ok() {
         return Err(rustler::Error::RaiseAtom("cookies_not_enabled"));
     };
+    #[cfg(feature = "gzip")]
+    if let Ok(term) = opts.map_get(atoms::gzip().encode(env)) {
+        builder = builder.gzip(term.decode_or_raise()?);
+    };
+    #[cfg(not(feature = "gzip"))]
+    if opts.map_get(atoms::gzip().encode(env)).is_ok() {
+        return Err(rustler::Error::RaiseAtom("gzip_not_enabled"));
+    };
     if let Ok(term) = opts.map_get(atoms::proxy().encode(env)) {
         match term.decode::<Proxy>() {
             Ok(Proxy::System) => (),

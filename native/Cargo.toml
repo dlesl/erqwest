@@ -19,3 +19,4 @@ futures = "0.3"
 [features]
 default = []
 cookies = ["reqwest/cookies"]
+gzip = ["reqwest/gzip"]
