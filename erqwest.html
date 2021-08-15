@@ -20,11 +20,15 @@
 
 
 <h3 class="typedecl"><a name="type-client_opts">client_opts()</a></h3>
-<p><tt>client_opts() = #{identity =&gt; {Pkcs12Der::binary(), Password::binary()}, follow_redirects =&gt; boolean() | non_neg_integer(), additional_root_certs =&gt; [CertDer::binary()], use_built_in_root_certs =&gt; boolean(), danger_accept_invalid_hostnames =&gt; boolean(), danger_accept_invalid_certs =&gt; boolean(), proxy =&gt; system | no_proxy | <a href="#type-proxy_config">proxy_config()</a>, connect_timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, pool_idle_timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, pool_max_idle_per_host =&gt; non_neg_integer(), https_only =&gt; boolean(), cookie_store =&gt; boolean()}</tt></p>
+<p><tt>client_opts() = #{identity =&gt; {Pkcs12Der::binary(), Password::binary()}, follow_redirects =&gt; boolean() | non_neg_integer(), additional_root_certs =&gt; [CertDer::binary()], use_built_in_root_certs =&gt; boolean(), danger_accept_invalid_hostnames =&gt; boolean(), danger_accept_invalid_certs =&gt; boolean(), proxy =&gt; system | no_proxy | <a href="#type-proxy_config">proxy_config()</a>, connect_timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, pool_idle_timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, pool_max_idle_per_host =&gt; non_neg_integer(), https_only =&gt; boolean(), cookie_store =&gt; boolean(), gzip =&gt; boolean()}</tt></p>
 
 
 <h3 class="typedecl"><a name="type-err">err()</a></h3>
 <p><tt>err() = #{code := timeout | redirect | connect | request | body | cancelled | unknown, reason := binary()}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-feature">feature()</a></h3>
+<p><tt>feature() = cookies | gzip</tt></p>
 
 
 <h3 class="typedecl"><a name="type-header">header()</a></h3>
@@ -66,6 +70,7 @@
 <h2><a name="index">Function Index</a></h2>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cancel-1">cancel/1</a></td><td>Cancel an asynchronous request.</td></tr>
 <tr><td valign="top"><a href="#close_client-1">close_client/1</a></td><td>Close a client and idle connections in its pool.</td></tr>
+<tr><td valign="top"><a href="#feature-1">feature/1</a></td><td>Determines whether a compile-time feature is available.</td></tr>
 <tr><td valign="top"><a href="#get-2">get/2</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#get-3">get/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#make_client-0">make_client/0</a></td><td></td></tr>
@@ -103,6 +108,14 @@ the client will automatically be cleaned up when it is garbage collected by
 the VM.</p>
  
   Fails with reason badarg if the client has already been closed.</p>
+
+<h3 class="function"><a name="feature-1">feature/1</a></h3>
+<div class="spec">
+<p><tt>feature(Feature::<a href="#type-feature">feature()</a>) -&gt; boolean()</tt><br></p>
+<p> </p>
+</div><p>Determines whether a compile-time feature is available. Enable features
+  by adding them to the environment variable <code>ERQWEST_FEATURES</code> (comma
+  separated list) at build time.</p>
 
 <h3 class="function"><a name="get-2">get/2</a></h3>
 <div class="spec">
