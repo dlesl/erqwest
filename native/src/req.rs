@@ -11,7 +11,7 @@ use std::thread::{self, ThreadId};
 
 use crate::atoms;
 use crate::client::ClientResource;
-use crate::timeout::maybe_timeout;
+use crate::utils::{DecodeOrRaise, maybe_timeout};
 
 #[derive(NifUnitEnum, Clone, Copy, Debug)]
 enum Method {
@@ -165,7 +165,7 @@ fn req_async_internal(
     caller_ref: Term,
     req: Term,
 ) -> NifResult<ResourceArc<AbortResource>> {
-    let ReqBase { url, method } = req.decode()?;
+    let ReqBase { url, method } = req.decode_or_raise()?;
     // returns BadArg if the client was already closed with close_client
     let client = resource
         .client
@@ -177,7 +177,7 @@ fn req_async_internal(
     let mut req_builder = client.request(method.into(), url);
     if let Ok(term) = req.map_get(atoms::headers().encode(env)) {
         for h in term.decode::<ListIterator>()? {
-            let (k, v): (&str, &str) = h.decode()?;
+            let (k, v): (&str, &str) = h.decode_or_raise()?;
             req_builder = req_builder.header(k, v);
         }
     };

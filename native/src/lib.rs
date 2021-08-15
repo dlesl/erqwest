@@ -3,7 +3,7 @@ use rustler::{Env, NifUnitEnum, Term, nif};
 mod client;
 mod req;
 mod runtime;
-mod timeout;
+mod utils;
 
 mod atoms {
     rustler::atoms! {
