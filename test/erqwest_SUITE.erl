@@ -23,12 +23,16 @@ end_per_suite(_Config) ->
   ok = erqwest:stop_client(default),
   ok = application:stop(erqwest).
 
-init_per_group(http, Config) ->
-  Config;
 init_per_group(cookies, Config) ->
-  Config;
-init_per_group(async, Config) ->
-  Config;
+  case erqwest:feature(cookies) of
+    true -> Config;
+    false -> {skipped, cookies_not_enabled}
+  end;
+init_per_group(gzip, Config) ->
+  case erqwest:feature(gzip) of
+    true -> Config;
+    false -> {skipped, gzip_not_enabled}
+  end;
 init_per_group(client_cert, Config) ->
   {ok, #{status := 200, body := Cert}} =
     erqwest:get(default, <<"https://badssl.com/certs/badssl.com-client.p12">>),
@@ -57,24 +61,19 @@ init_per_group(proxy_auth, Config) ->
   ];
 init_per_group(runtime, Config) ->
   application:stop(erqwest),
+  Config;
+init_per_group(_Group, Config) ->
   Config.
 
-end_per_group(http, _Config) ->
-  ok;
-end_per_group(cookies, _Config) ->
-  ok;
-end_per_group(async, _Config) ->
-  ok;
-end_per_group(client_cert, _Config) ->
-  ok;
-end_per_group(proxy, _Config) ->
-  ok;
 end_per_group(proxy_no_auth, Config) ->
   stop_tinyproxy(?config(tinyproxy, Config));
 end_per_group(proxy_auth, Config) ->
   stop_tinyproxy(?config(tinyproxy, Config));
 end_per_group(runtime, _Config) ->
-  ok = application:start(erqwest).
+  ok = application:start(erqwest),
+  ok = erqwest:start_client(default);
+end_per_group(_Group, _Config) ->
+  ok.
 
 groups() ->
   [ {http, [parallel],
@@ -124,6 +123,11 @@ groups() ->
      , runtime_unexpected_exit
      , runtime_multiple_runtimes
      ]}
+  , {gzip, [],
+     [ gzip_enabled
+     , gzip_disabled
+     ]
+    }
   ].
 
 all() ->
@@ -133,6 +137,7 @@ all() ->
   , {group, cookies}
   , {group, async}
   , {group, runtime}
+  , {group, gzip}
   ].
 
 get(_Config) ->
@@ -363,6 +368,15 @@ runtime_multiple_runtimes(_Config) ->
   {ok, _} = erqwest:get(C2, <<"https://httpbin.org/get">>),
   erqwest:stop_runtime(E1),
   ok = gen_server:stop(Pid2).
+
+gzip_enabled(_Config) ->
+  {ok, #{status := 200, body := Body}} = erqwest:get(default, <<"https://httpbin.org/gzip">>),
+  #{<<"gzipped">> := true} = jsx:decode(Body).
+
+gzip_disabled(_Config) ->
+  C = erqwest:make_client(#{gzip => false}),
+  {ok, #{status := 200, body := Body}} = erqwest:get(C, <<"https://httpbin.org/gzip">>),
+  #{<<"gzipped">> := true} = jsx:decode(zlib:gunzip(Body)).
 
 %% helpers
 

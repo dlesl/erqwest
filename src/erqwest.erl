@@ -14,6 +14,7 @@
         , get/3
         , post/3
         , cancel/1
+        , feature/1
         ]).
 
 -on_load(init/0).
@@ -40,6 +41,7 @@
                         , pool_max_idle_per_host => non_neg_integer()
                         , https_only => boolean() %% default false
                         , cookie_store => boolean() %% default false
+                        , gzip => boolean() %% default false
                         }.
 -type method() :: options | get | post | put | delete | head | trace | connect | patch.
 -type header() :: {binary(), binary()}.
@@ -60,6 +62,7 @@
 -type err() :: #{ code := timeout | redirect | connect | request | body | cancelled | unknown
                 , reason := binary()
                 }.
+-type feature() :: cookies | gzip.
 
 -export_type([ client/0
              , req_handle/0
@@ -167,6 +170,13 @@ get(Client, Url, Opts) ->
 -spec post(client() | atom(), binary(), req_opts()) -> {ok, resp()} | {error, err()}.
 post(Client, Url, Opts) ->
   req(Client, Opts#{url => Url, method => post}).
+
+%% @doc Determines whether a compile-time feature is available. Enable features
+%% by adding them to the environment variable `ERQWEST_FEATURES' (comma
+%% separated list) at build time.
+-spec feature(feature()) -> boolean().
+feature(_Feature) ->
+  erlang:nif_error(nif_not_loaded).
 
 %% internal
 

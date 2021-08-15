@@ -1,9 +1,11 @@
-use rustler::{Env, Term};
+use rustler::{nif, Env, NifResult, NifUnitEnum, Term};
+
+use crate::utils::DecodeOrRaise;
 
 mod client;
 mod req;
 mod runtime;
-mod timeout;
+mod utils;
 
 mod atoms {
     rustler::atoms! {
@@ -20,6 +22,7 @@ mod atoms {
         erqwest_runtime_stopped,
         error,
         follow_redirects,
+        gzip,
         headers,
         https_only,
         identity,
@@ -43,6 +46,21 @@ fn load(env: Env, _info: Term) -> bool {
     true
 }
 
+#[derive(NifUnitEnum)]
+enum Feature {
+    Cookies,
+    Gzip
+}
+
+#[nif]
+fn feature(f: Term) -> NifResult<bool> {
+    use Feature::*;
+    Ok(match f.decode_or_raise()? {
+        Cookies => cfg!(feature = "cookies"),
+        Gzip => cfg!(feature = "gzip"),
+    })
+}
+
 rustler::init!(
     "erqwest",
     [
@@ -51,7 +69,8 @@ rustler::init!(
         client::make_client,
         client::close_client,
         req::req_async_internal,
-        req::cancel
+        req::cancel,
+        feature
     ],
     load = load
 );
