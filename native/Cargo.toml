@@ -12,8 +12,8 @@ crate-type = ["cdylib"]
 rustler = "0.22.0"
 rustler_codegen = "0.22.0"
 lazy_static = "1.0.0"
-reqwest = { version = "0.11", features = ["native-tls"] }
-tokio = { version = "1", features = ["rt-multi-thread"] }
+reqwest = { version = "0.11", features = ["native-tls", "stream"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 futures = "0.3"
 
 [features]

@@ -22,16 +22,27 @@ mod atoms {
         erqwest_runtime_stopped,
         error,
         follow_redirects,
+        bad_opt,
+        stream,
+        stream_response,
+        response_body,
         gzip,
         headers,
         https_only,
         identity,
         method,
+        length,
+        period,
+        next,
+        cancel,
+        chunk,
+        fin,
         ok,
         pool_idle_timeout,
         pool_max_idle_per_host,
         proxy,
         reason,
+        reply,
         status,
         timeout,
         url,
@@ -41,7 +52,7 @@ mod atoms {
 
 fn load(env: Env, _info: Term) -> bool {
     rustler::resource!(client::ClientResource, env);
-    rustler::resource!(req::AbortResource, env);
+    rustler::resource!(req::ReqHandle, env);
     rustler::resource!(runtime::RuntimeResource, env);
     true
 }
@@ -49,7 +60,7 @@ fn load(env: Env, _info: Term) -> bool {
 #[derive(NifUnitEnum)]
 enum Feature {
     Cookies,
-    Gzip
+    Gzip,
 }
 
 #[nif]
@@ -62,14 +73,18 @@ fn feature(f: Term) -> NifResult<bool> {
 }
 
 rustler::init!(
-    "erqwest",
+    "erqwest_nif",
     [
         runtime::start_runtime,
         runtime::stop_runtime,
         client::make_client,
         client::close_client,
-        req::req_async_internal,
+        req::req,
         req::cancel,
+        req::send,
+        req::finish_send,
+        req::read,
+        req::cancel_stream,
         feature
     ],
     load = load

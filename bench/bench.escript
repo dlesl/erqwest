@@ -6,10 +6,10 @@
 -define(HOST_TLS, <<"https://localhost:8443">>).
 -define(ECHO, <<"/echo">>).
 -define(WORKERS, 50).
--define(TIME, timer:seconds(30)).
+-define(TIME, timer:seconds(10)).
 -define(KATIPO_POOL, pool).
 -define(KATIPO_POOL_SIZE, 8).
--define(PAYLOAD_SIZE, 10 * 1024).
+-define(PAYLOAD_SIZE, 10).
 -define(PAYLOAD, << <<0>> || _ <- lists:seq(1, ?PAYLOAD_SIZE) >>).
 
 main([Client0]) ->

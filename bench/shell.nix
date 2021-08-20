@@ -4,5 +4,6 @@ in (import ../shell.nix { inherit pkgs; }).overrideAttrs (old: {
     (nginx.override { modules = [ nginxModules.echo ]; })
     libevent
     curl
+    netcat
   ]);
 })

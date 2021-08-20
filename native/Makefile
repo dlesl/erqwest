@@ -1,10 +1,10 @@
 PROJECT = erqwest
 
-PROFILE ?= release
+CARGO_PROFILE ?= release
 
 ERQWEST_FEATURES ?=
 
-ifeq ($(PROFILE), release)
+ifeq ($(CARGO_PROFILE), release)
 	CARGO_OPTS += --release
 endif
 
@@ -16,7 +16,7 @@ else
 endif
 
 PRIV := ../priv
-RUST_SO := target/$(PROFILE)/lib$(PROJECT).$(RUST_SO_EXT)
+RUST_SO := target/$(CARGO_PROFILE)/lib$(PROJECT).$(RUST_SO_EXT)
 # erlang always looks for .so, even on darwin
 OUTPUT_SO := $(PRIV)/lib$(PROJECT).so
 
