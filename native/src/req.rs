@@ -103,6 +103,7 @@ impl From<reqwest::Error> for Error {
     }
 }
 
+/// To store an erlang term we need an `OwnedEnv` too.
 struct CallerRef {
     env: OwnedEnv,
     ref_: SavedTerm,
@@ -124,11 +125,65 @@ impl Encoder for CallerRef {
     }
 }
 
+/// Sent when erlang is streaming the request body
+enum SendCmd {
+    Send(Vec<u8>),
+    FinishSend,
+}
+
+/// Options for reading a chunk of the response body
+struct ReadOpts {
+    length: usize,
+    period: Option<Duration>,
+}
+
+enum IsFin {
+    Fin,
+    NoFin,
+}
+
+/// Helper for storing/encoding an HTTP response
+struct Resp {
+    status: u16,
+    headers: Vec<(String, OwnedBinary)>,
+    body: Option<OwnedBinary>,
+}
+
+impl Resp {
+    fn encode(self, env: Env) -> Term {
+        let headers1: Vec<_> = self
+            .headers
+            .into_iter()
+            .map(|(k, v)| (k, v.release(env)))
+            .collect();
+        let mut map = map::map_new(env);
+        map = map
+            .map_put(atoms::status().encode(env), self.status.encode(env))
+            .unwrap();
+        map = map
+            .map_put(atoms::headers().encode(env), headers1.encode(env))
+            .unwrap();
+        if let Some(body) = self.body {
+            map = map
+                .map_put(atoms::body().encode(env), body.release(env).encode(env))
+                .unwrap();
+        }
+        map.encode(env)
+    }
+}
+
 struct Request {
     caller_ref: Option<CallerRef>,
     caller_pid: LocalPid,
     initial_thread: ThreadId,
+    /// An indicator for whether the future was dropped. This doesn't strictly
+    /// need to be an atomic since we only access it from `initial_thread`.
     dropped_on_initial_thread: Arc<AtomicBool>,
+    /// The channels we use to feed the request body to `reqwest`: The other end
+    /// of the `Sender` is converted to a Stream and given to `reqwest`. We get
+    /// new data from erlang on the receiver and feed it to the sender. This
+    /// allows us to provide backpressure by replying to erlang after each chunk
+    /// is successfully `fed`.
     req_body_channels: Option<(
         Sender<Result<Vec<u8>, Infallible>>,
         UnboundedReceiver<SendCmd>,
@@ -137,6 +192,11 @@ struct Request {
 }
 
 impl Request {
+    /// Creating an `OwnedEnv` has a (small) cost. When it's time to send the
+    /// final message, we exploit the fact that `CallerRef` has an `OwnedEnv`
+    /// that will no longer be needed. `take`ing the `CallerRef` signals to the
+    /// `Drop` implementation that a final reply has been sent and there is no
+    /// need to send a `cancelled` message.
     fn reply_final<F>(&mut self, f: F)
     where
         F: for<'a> FnOnce(Env<'a>, Term<'a>) -> Term<'a>,
@@ -171,6 +231,8 @@ impl Request {
                     // closing the tx means "complete the request".
                     drop(resp);
                     drop(tx);
+                    // the client is not waiting for a reply (eg. has
+                    // cancelled), so we don't reply
                     self.reply_none();
                     return;
                 }
@@ -222,6 +284,10 @@ impl Request {
             }
         }
     }
+    /// Stream the request body and wait for the response. These two things need
+    /// to be combined, since a response can come at any time (even before the
+    /// request body is complete). Return values: `Ok(reply | error)` => send a
+    /// reply message, `None` => the stream was cancelled, end without replying.
     async fn stream_req(
         &mut self,
         mut resp: &mut Pin<&mut impl Future<Output = reqwest::Result<reqwest::Response>>>,
@@ -282,6 +348,9 @@ impl Request {
             }
         }
     }
+    /// Stream the response body. This is always called last, so we are
+    /// responsible for sending the final message (reply, error, or nothing if
+    /// streaming was cancelled).
     async fn stream_resp(
         &mut self,
         mut resp: reqwest::Response,
@@ -329,7 +398,7 @@ impl Request {
                                 }
                                 IsFin::Fin => {
                                     // Before we send the reply, drop the rx to make
-                                    // sure that further calls to read fail
+                                    // sure that further calls to `read` fail
                                     drop(rx);
                                     self.reply_final(|env, ref_| {
                                         (
@@ -346,7 +415,7 @@ impl Request {
                         }
                         Err(e) => {
                             // Before we send the reply, drop the rx to make
-                            // sure that further calls to read fail
+                            // sure that further calls to `read` fail
                             drop(rx);
                             self.reply_error(e.into());
                             return;
@@ -359,31 +428,6 @@ impl Request {
                     return;
                 }
             }
-        }
-    }
-}
-
-async fn stream_response_chunk(
-    response: &mut reqwest::Response,
-    opts: ReadOpts,
-    buf: &mut Vec<u8>,
-) -> Result<IsFin, Error> {
-    let timeout = OptionFuture::from(opts.period.map(tokio::time::sleep));
-    tokio::pin!(timeout);
-    loop {
-        tokio::select! {
-            // TODO: is this cancellation safe? maybe safer to use a stream which is guaranteed?
-            res = response.chunk() => match res {
-                Ok(Some(chunk)) => {
-                    buf.extend_from_slice(&chunk);
-                    if buf.len() >= opts.length {
-                        return Ok(IsFin::NoFin);
-                    }
-                }
-                Ok(None) => return Ok(IsFin::Fin),
-                Err(e) => return Err(e.into()),
-            },
-            Some(()) = &mut timeout => return Ok(IsFin::NoFin)
         }
     }
 }
@@ -406,14 +450,29 @@ impl Drop for Request {
     }
 }
 
-struct ReadOpts {
-    length: usize,
-    period: Option<Duration>,
-}
-
-enum SendCmd {
-    Send(Vec<u8>),
-    FinishSend,
+async fn stream_response_chunk(
+    response: &mut reqwest::Response,
+    opts: ReadOpts,
+    buf: &mut Vec<u8>, // passed in so we can reuse the memory allocation between chunks
+) -> Result<IsFin, Error> {
+    let timeout = OptionFuture::from(opts.period.map(tokio::time::sleep));
+    tokio::pin!(timeout);
+    loop {
+        tokio::select! {
+            // TODO: is this cancellation safe? maybe safer to use a stream which is guaranteed?
+            res = response.chunk() => match res {
+                Ok(Some(chunk)) => {
+                    buf.extend_from_slice(&chunk);
+                    if buf.len() >= opts.length {
+                        return Ok(IsFin::NoFin);
+                    }
+                }
+                Ok(None) => return Ok(IsFin::Fin),
+                Err(e) => return Err(e.into()),
+            },
+            Some(()) = &mut timeout => return Ok(IsFin::NoFin)
+        }
+    }
 }
 
 pub struct ReqHandle {
@@ -422,20 +481,17 @@ pub struct ReqHandle {
     resp_stream_tx: Option<mpsc::UnboundedSender<ReadOpts>>,
 }
 
+/// Helper for decoding the `body` opt
 #[derive(NifUnitEnum, PartialEq)]
 enum StreamBody {
     Stream,
 }
 
+/// Helper for decoding the `response_body` opt
 #[derive(NifUnitEnum)]
 enum ResponseBody {
     Stream,
     Complete,
-}
-
-enum IsFin {
-    Fin,
-    NoFin,
 }
 
 #[rustler::nif]
@@ -470,13 +526,12 @@ fn req(
             if let Ok(body) = v.decode_as_binary() {
                 req_builder = req_builder.body(body.as_slice().to_owned());
             } else {
-                if v.decode_or_raise::<StreamBody>()? == StreamBody::Stream {
-                    let (tx, rx) = mpsc::channel::<Result<Vec<u8>, Infallible>>(0);
-                    let (body_tx, body_rx0) = mpsc::unbounded();
-                    req_builder = req_builder.body(reqwest::Body::wrap_stream(rx));
-                    req_body_tx = Some(body_tx);
-                    req_body_channels = Some((tx, body_rx0));
-                }
+                v.decode_or_raise::<StreamBody>()?;
+                let (tx, rx) = mpsc::channel::<Result<Vec<u8>, Infallible>>(0);
+                let (body_tx, body_rx0) = mpsc::unbounded();
+                req_builder = req_builder.body(reqwest::Body::wrap_stream(rx));
+                req_body_tx = Some(body_tx);
+                req_body_channels = Some((tx, body_rx0));
             }
         } else if k == atoms::response_body() {
             match v.decode_or_raise()? {
@@ -523,35 +578,6 @@ fn req(
     }
 }
 
-struct Resp {
-    status: u16,
-    headers: Vec<(String, OwnedBinary)>,
-    body: Option<OwnedBinary>,
-}
-
-impl Resp {
-    fn encode(self, env: Env) -> Term {
-        let headers1: Vec<_> = self
-            .headers
-            .into_iter()
-            .map(|(k, v)| (k, v.release(env)))
-            .collect();
-        let mut map = map::map_new(env);
-        map = map
-            .map_put(atoms::status().encode(env), self.status.encode(env))
-            .unwrap();
-        map = map
-            .map_put(atoms::headers().encode(env), headers1.encode(env))
-            .unwrap();
-        if let Some(body) = self.body {
-            map = map
-                .map_put(atoms::body().encode(env), body.release(env).encode(env))
-                .unwrap();
-        }
-        map.encode(env)
-    }
-}
-
 /// Intended to be used by `erqwest_async`, and causes the future to be dropped
 /// ASAP.
 #[rustler::nif]
@@ -575,6 +601,7 @@ fn cancel_stream(req_handle: ResourceArc<ReqHandle>) -> Atom {
     atoms::ok()
 }
 
+/// Stream a chunk of the request body
 #[rustler::nif]
 fn send<'a>(
     env: Env<'a>,
@@ -601,6 +628,7 @@ fn finish_send(req_handle: ResourceArc<ReqHandle>) -> NifResult<Atom> {
     Err(rustler::Error::BadArg)
 }
 
+/// Stream a chunk of the response body
 #[rustler::nif]
 fn read<'a>(
     env: Env<'a>,
