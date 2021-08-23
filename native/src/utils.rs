@@ -35,7 +35,7 @@ enum Timeout {
 }
 
 pub fn maybe_timeout(t: Term) -> NifResult<Option<Duration>> {
-    match t.decode()? {
+    match t.decode_or_raise()? {
         Timeout::Infinity(_) => Ok(None),
         Timeout::Timeout(ms) => Ok(Some(Duration::from_millis(ms))),
     }

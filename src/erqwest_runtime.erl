@@ -29,7 +29,7 @@ get() ->
 
 init([]) ->
   process_flag(trap_exit, true),
-  Runtime = erqwest:start_runtime(self()),
+  Runtime = erqwest_nif:start_runtime(self()),
   persistent_term:put(?MODULE, Runtime),
   {ok, #state{runtime=Runtime}}.
 
@@ -47,7 +47,7 @@ handle_info(_Info, State) ->
 terminate(_Reason, #state{runtime=undefined}) ->
   ok;
 terminate(_Reason, #state{runtime=Runtime}) ->
-  erqwest:stop_runtime(Runtime),
+  erqwest_nif:stop_runtime(Runtime),
   receive
     erqwest_runtime_stopped -> ok
   end.

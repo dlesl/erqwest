@@ -11,7 +11,7 @@
 -include_lib("stdlib/include/assert.hrl").
 
 suite() ->
-  [{timetrap, {seconds, 60}}].
+  [{timetrap, {seconds, 30}}].
 
 init_per_suite(Config) ->
   {ok, _} = application:ensure_all_started(erqwest),
@@ -75,12 +75,23 @@ end_per_group(runtime, _Config) ->
 end_per_group(_Group, _Config) ->
   ok.
 
+init_per_testcase(_Case, Config) ->
+  Config.
+
+end_per_testcase(Case, _Config) ->
+  receive
+    Msg -> ct:fail("stray message detected after ~p: ~p", [Case, Msg])
+  after 100 ->
+      ok
+  end.
+
 groups() ->
   [ {http, [parallel],
      [ get
      , get_http
      , https_only
      , post
+     , post_iolist
      , timeout
      , timeout_default
      , timeout_infinity
@@ -88,6 +99,7 @@ groups() ->
      , redirect_follow
      , redirect_no_follow
      , redirect_limited
+     , kill_process
      ]}
   , {client_cert, [parallel],
      [ with_cert
@@ -123,11 +135,32 @@ groups() ->
      , runtime_unexpected_exit
      , runtime_multiple_runtimes
      ]}
-  , {gzip, [],
+  , {gzip, [parallel],
      [ gzip_enabled
      , gzip_disabled
-     ]
-    }
+     ]}
+  , {stream, [parallel],
+     [ stream_request_success
+     , stream_request_early_reply
+     , stream_response_success
+     , stream_both_success
+     , stream_request_invalid
+     , stream_request_closed
+     , stream_request_backpressure
+     , stream_response_closed
+     , stream_request_cancel
+     , stream_response_cancel
+     , stream_wrong_process
+     , stream_async_success
+     , stream_async_cancel_connect
+     , stream_async_cancel_send
+     , stream_async_cancel_send_blocked
+     , stream_async_cancel_finish_send
+     , stream_async_cancel_read
+     , stream_connect_timeout
+     , stream_response_timeout
+     , stream_handle_dropped_send
+     ]}
   ].
 
 all() ->
@@ -138,6 +171,7 @@ all() ->
   , {group, async}
   , {group, runtime}
   , {group, gzip}
+  , {group, stream}
   ].
 
 get(_Config) ->
@@ -161,6 +195,12 @@ post(_Config) ->
                  #{ headers => [{<<"Content-Type">>, <<"application/json">>}]
                   , body => <<"!@#$%^&*()">>}),
   #{<<"data">> := <<"!@#$%^&*()">>} = jsx:decode(Body).
+
+post_iolist(_Config) ->
+  {ok, #{status := 200, body := Body}} =
+    erqwest:post(default, <<"https://httpbin.org/post">>,
+                 #{ body => [$I, " am an ", <<"iolist">>, [[$.]]]}),
+  #{<<"data">> := <<"I am an iolist.">>} = jsx:decode(Body).
 
 timeout(_Config) ->
   {error, #{code := timeout}} =
@@ -192,6 +232,19 @@ redirect_limited(_Config) ->
   {error, #{code := redirect}} =
     erqwest:get(erqwest:make_client(#{follow_redirects => 2}),
                 <<"https://nghttp2.org/httpbin/redirect/3">>).
+
+kill_process(_Config) ->
+  %% If the process executing a synchronouse request is killed, the request
+  %% should be cancelled. TODO: add monitor support to rustler.
+  ok.
+%% process_flag(trap_exit, true),
+%% {LSock, Url} = server:listen(),
+%% Pid = spawn_link(fun() -> erqwest:get(default, Url) end),
+%% Sock = server:accept(LSock),
+%% server:read(Sock),
+%% exit(Pid, kill),
+%% receive {'EXIT', Pid, killed} -> ok end,
+%% server:wait_for_close(Sock).
 
 with_cert(Config) ->
   C = erqwest:make_client(#{identity => {?config(cert, Config), ?config(pass, Config)}}),
@@ -260,33 +313,33 @@ cookies_default(_Config) ->
   #{<<"cookies">> := Cookies} = jsx:decode(Body).
 
 async_get(_Config) ->
-  erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/get">>}),
+  erqwest_async:req(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/get">>}),
   receive
-    {erqwest_response, Ref, Res} ->
-      {ok, #{status := 200}} = Res
+    {erqwest_response, Ref, reply, Res} ->
+      #{status := 200} = Res
   end.
 
 async_cancel(_Config) ->
   Handle =
-    erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/1">>}),
-  ok = erqwest:cancel(Handle),
+    erqwest_async:req(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/1">>}),
+  ok = erqwest_async:cancel(Handle),
   receive
-    {erqwest_response, Ref, Res} ->
-      {error, #{code := cancelled}} = Res
+    {erqwest_response, Ref, error, Res} ->
+      #{code := cancelled} = Res
   end,
   %% cancelling again has no effect
-  ok = erqwest:cancel(Handle).
+  ok = erqwest_async:cancel(Handle).
 
 async_cancel_after_response(_Config) ->
   Handle =
-    erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/get">>}),
+    erqwest_async:req(default, self(), Ref=make_ref(), #{method => get, url => <<"https://httpbin.org/get">>}),
   receive
-    {erqwest_response, Ref, Res} ->
-      {ok, #{status := 200}} = Res
+    {erqwest_response, Ref, reply, Res} ->
+      #{status := 200} = Res
   end,
-  ok = erqwest:cancel(Handle),
+  ok = erqwest_async:cancel(Handle),
   receive
-    {erqwest_response, _, _} ->
+    {erqwest_response, _, _, _} ->
       ct:fail(unexpected_response)
   after 100 ->
       ok
@@ -297,21 +350,21 @@ async_race_requests(_Config) ->
     lists:map(
       fun(Delay) ->
           Url = <<"https://httpbin.org/delay/", (integer_to_binary(Delay))/binary>>,
-          Handle = erqwest:req_async(default, self(), Ref=make_ref(), #{method => get, url => Url}),
+          Handle = erqwest_async:req(default, self(), Ref=make_ref(), #{method => get, url => Url}),
           {Ref, {Handle, Delay}}
       end,
       [1, 5, 5, 5]
      ),
   Refs = maps:from_list(Refs0),
   receive
-    {erqwest_response, FirstRef, FirstRes} ->
+    {erqwest_response, FirstRef, reply, FirstRes} ->
       #{FirstRef := {_, 1}} = Refs,
-      [erqwest:cancel(H) || {H, _} <- maps:values(Refs)],
-      {ok, #{status := 200}} = FirstRes
+      [erqwest_async:cancel(H) || {H, _} <- maps:values(Refs)],
+      #{status := 200} = FirstRes
   end,
-  Rest = [receive {erqwest_response, R, Res} -> Res end
+  Rest = [receive {erqwest_response, R, error, Res} -> Res end
           || R <- maps:keys(Refs), R =/= FirstRef],
-  [{error, #{code := cancelled}} = Res || Res <- Rest].
+  [#{code := cancelled} = Res || Res <- Rest].
 
 runtime_stopped_make_client(_Config) ->
   ok = application:start(erqwest),
@@ -323,18 +376,18 @@ runtime_stopped_inflight_request(_Config) ->
   ok = application:start(erqwest),
   C = erqwest:make_client(),
   %% two requests that will hopefully be at different stages
-  erqwest:req_async(C, self(), Ref0=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/5">>}),
+  erqwest_async:req(C, self(), Ref0=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/5">>}),
   timer:sleep(1000),
-  erqwest:req_async(C, self(), Ref1=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/5">>}),
+  erqwest_async:req(C, self(), Ref1=make_ref(), #{method => get, url => <<"https://httpbin.org/delay/5">>}),
   ok = application:stop(erqwest),
   receive
-    {erqwest_response, Ref0, Resp0} ->
+    {erqwest_response, Ref0, error, _} ->
       %% the error could vary depending on what stage the connection was at
-      {error, #{}} = Resp0
+      ok
   end,
   receive
-    {erqwest_response, Ref1, Resp1} ->
-      {error, #{}} = Resp1
+    {erqwest_response, Ref1, error, _} ->
+      ok
   end.
 
 runtime_stopped_new_request(_Config) ->
@@ -346,7 +399,7 @@ runtime_stopped_new_request(_Config) ->
 runtime_unexpected_exit(_Config) ->
   process_flag(trap_exit, true),
   {ok, Pid} = erqwest_runtime:start_link(),
-  erqwest:stop_runtime(erqwest_runtime:get()),
+  erqwest_nif:stop_runtime(erqwest_runtime:get()),
   receive
     {'EXIT', Pid, erqwest_runtime_failure} -> ok
   end.
@@ -366,7 +419,8 @@ runtime_multiple_runtimes(_Config) ->
   C2 = erqwest:make_client(),
   {ok, _} = erqwest:get(C1, <<"https://httpbin.org/get">>),
   {ok, _} = erqwest:get(C2, <<"https://httpbin.org/get">>),
-  erqwest:stop_runtime(E1),
+  erqwest_nif:stop_runtime(E1),
+  unlink(Pid2),
   ok = gen_server:stop(Pid2).
 
 gzip_enabled(_Config) ->
@@ -377,6 +431,288 @@ gzip_disabled(_Config) ->
   C = erqwest:make_client(#{gzip => false}),
   {ok, #{status := 200, body := Body}} = erqwest:get(C, <<"https://httpbin.org/gzip">>),
   #{<<"gzipped">> := true} = jsx:decode(zlib:gunzip(Body)).
+
+stream_request_success(_Config) ->
+  {handle, Handle} = erqwest:req(default, #{ method => post
+                                           , url => <<"https://httpbin.org/post">>
+                                           , body => stream
+                                           }),
+  ok = erqwest:send(Handle, <<"1,">>),
+  ok = erqwest:send(Handle, <<"2,">>),
+  ok = erqwest:send(Handle, <<"3">>),
+  {ok, #{body := Body}} = erqwest:finish_send(Handle),
+  #{<<"data">> := <<"1,2,3">>} = jsx:decode(Body).
+
+stream_request_early_reply(_Config) ->
+  {LSock, Url} = server:listen(),
+  {handle, Handle} = erqwest:req(default, #{ method => post
+                                           , url => Url
+                                           , body => stream
+                                           }),
+  Sock = server:accept(LSock),
+  ok = erqwest:send(Handle, <<"data">>),
+  server:read(Sock),
+  server:reply(Sock, [<<"content-length: 0">>]),
+  timer:sleep(100),
+  {reply, #{body := <<>>}} = erqwest:send(Handle, <<"more data">>).
+
+stream_response_success(_Config) ->
+  {ok, #{body := Handle}} =
+    erqwest:get(default, <<"https://httpbin.org/stream-bytes/10000">>, #{response_body => stream}),
+  Loop = fun F() ->
+             Res = erqwest:read(Handle, #{length => 100}),
+             case Res of
+               {ok, Data} ->
+                 ct:log("done"),
+                 [Data];
+               {more, Data} ->
+                 ct:log("more"),
+                 [Data|F()]
+             end
+         end,
+  Data = Loop(),
+  ?assertEqual(iolist_size(Data), 10000),
+  ?assertException(error, badarg, erqwest:read(Handle)).
+
+stream_both_success(_Config) ->
+  {LSock, Url} = server:listen(),
+  {handle, H} = erqwest:post(default, Url, #{body => stream, response_body => stream}),
+  Sock = server:accept(LSock),
+  server:read(Sock),
+  ok = erqwest:send(H, <<"Data">>),
+  server:reply(Sock, []),
+  {ok, #{body := H}} = erqwest:finish_send(H),
+  ?assertException(error, badarg, erqwest:send(H, <<"fail">>)),
+  ?assertException(error, badarg, erqwest:finish_send(H)),
+  server:send(Sock, <<"Data">>),
+  {more, <<"Data">>} = erqwest:read(H, #{length => 4, period => 100}),
+  server:close(Sock),
+  {ok, <<>>} = erqwest:read(H),
+  ?assertException(error, badarg, erqwest:read(H)).
+
+stream_request_invalid(_Config) ->
+  {handle, H} = erqwest:post(default, <<"invalid">>, #{body => stream}),
+  {error, #{code := unknown}} = erqwest:send(H, <<"data">>),
+  ?assertException(error, badarg, erqwest:send(H, <<"fail">>)).
+
+stream_request_backpressure(_Config) ->
+  {LSock, Url} = server:listen(),
+  H = erqwest_async:req(default, self(), Ref=make_ref(), #{ method => post
+                                                          , url => Url
+                                                          , body => stream
+                                                          }),
+
+  BytesSent = send_until_blocked(H, Ref),
+  Sock = server:accept(LSock),
+  server:read_silent(Sock, BytesSent),
+  %% now we can send again
+  ?assert(send_until_blocked(H, Ref) > 0),
+  server:close(Sock),
+  receive {erqwest_response, Ref, error, _} -> ok end.
+
+stream_request_closed(_Config) ->
+  {LSock, Url} = server:listen(),
+  {handle, H} = erqwest:post(default, Url, #{body => stream}),
+  server:close(server:accept(LSock)),
+  timer:sleep(100),
+  {error, #{code := request}} = erqwest:send(H, <<"more">>),
+  ?assertException(error, badarg, erqwest:send(H, <<"fail">>)).
+
+stream_request_cancel(_Config) ->
+  {LSock, Url} = server:listen(),
+  {handle, H} = erqwest:post(default, Url, #{body => stream}),
+  Sock = server:accept(LSock),
+  server:read(Sock),
+  ok = erqwest:send(H, <<"begin">>),
+  ok = erqwest:send(H, <<"please">>),
+  server:read(Sock),
+  erqwest:cancel(H),
+  server:wait_for_close(Sock),
+  ?assertException(error, badarg, erqwest:send(H, <<"fail">>)).
+
+stream_response_closed(_Config) ->
+  {LSock, Url} = server:listen(),
+  Parent = self(),
+  spawn_link(fun() ->
+                 Sock = server:accept(LSock),
+                 server:read(Sock),
+                 server:reply(Sock, [<<"content-length: 100">>]),
+                 ok = gen_tcp:controlling_process(Sock, Parent),
+                 Parent ! Sock
+             end),
+  {ok, #{body := H}} = erqwest:post(default, Url, #{response_body => stream}),
+  receive Sock -> Sock end,
+  server:send(Sock, <<"data">>),
+  {more, <<"data">>} = erqwest:read(H, #{length => 4, period => 100}),
+  server:close(Sock),
+  {error, #{code := body}} = erqwest:read(H),
+  ?assertException(error, badarg, erqwest:read(H)).
+
+stream_response_cancel(_Config) ->
+  {LSock, Url} = server:listen(),
+  Parent = self(),
+  spawn_link(fun() ->
+                 Sock = server:accept(LSock),
+                 server:read(Sock),
+                 server:reply(Sock, [<<"content-length: 100">>]),
+                 ok = gen_tcp:controlling_process(Sock, Parent),
+                 Parent ! Sock
+             end),
+  {ok, #{body := H}} = erqwest:post(default, Url, #{response_body => stream}),
+  receive Sock -> Sock end,
+  server:send(Sock, <<"data">>),
+  {more, <<"data">>} = erqwest:read(H, #{length => 4, period => 100}),
+  erqwest:cancel(H),
+  server:wait_for_close(Sock),
+  ?assertException(error, badarg, erqwest:read(H)).
+
+stream_wrong_process(_Config) ->
+  Self = self(),
+  spawn_link(fun() ->
+                 {handle, Handle} =
+                   erqwest:post(default, <<"invalid">>,
+                                #{body => stream, response_body => stream}),
+                 Self ! Handle
+             end),
+  receive Handle -> Handle end,
+  ?assertException(error, {assertEqual, _}, erqwest:send(Handle, <<"data">>)),
+  ?assertException(error, {assertEqual, _}, erqwest:finish_send(Handle)),
+  ?assertException(error, {assertEqual, _}, erqwest:finish_send(Handle)),
+  ?assertException(error, {assertEqual, _}, erqwest:read(Handle)).
+
+stream_async_success(_Config) ->
+  Data = << <<B>> || <<B>> <= rand:bytes(10000), B >= 32, B =< 126 >>,
+  <<Data1:(size(Data) div 2)/binary, Data2/binary>> = Data,
+  Handle = erqwest_async:req(default, self(), Ref=make_ref(),
+                             #{ method => post
+                              , url => <<"https://httpbin.org/post">>
+                              , body => stream
+                              , response_body => stream
+                              }),
+  ok = erqwest_async:send(Handle, Data1),
+  receive {erqwest_response, Ref, next} -> ok end,
+  ok = erqwest_async:send(Handle, Data2),
+  receive {erqwest_response, Ref, next} -> ok end,
+  ok = erqwest_async:finish_send(Handle),
+  receive {erqwest_response, Ref, reply, Payload} -> ok end,
+  ?assert(not is_map_key(body, Payload)),
+  Loop = fun Loop() ->
+             ok = erqwest_async:read(Handle, #{length => 1}),
+             receive
+               {erqwest_response, Ref, chunk, Chunk} ->
+                 [Chunk|Loop()];
+               {erqwest_response, Ref, fin, Chunk} ->
+                 [Chunk]
+             end
+         end,
+  #{<<"data">> := Data} = jsx:decode(iolist_to_binary(Loop())).
+
+stream_async_cancel_connect(_Config) ->
+  {_, Url} = server:listen(),
+  Handle = erqwest_async:req(default, self(), Ref=make_ref(),
+                             #{ method => post
+                              , url => Url
+                              , body => stream
+                              , response_body => stream
+                              }),
+  ok = erqwest_async:cancel(Handle),
+  receive
+    {erqwest_response, Ref, error, Err} ->
+      #{code := cancelled} = Err
+  end.
+
+stream_async_cancel_send(_Config) ->
+  {LSock, Url} = server:listen(),
+  Handle = erqwest_async:req(default, self(), Ref=make_ref(),
+                             #{ method => post
+                              , url => Url
+                              , body => stream
+                              , response_body => stream
+                              }),
+  _Sock = server:accept(LSock),
+  ok = erqwest_async:send(Handle, <<"data">>),
+  ok = erqwest_async:cancel(Handle),
+  %% we might get a `next` before our `error`
+  receive
+    {erqwest_response, Ref, error, Err} ->
+      ok;
+    {erqwest_response, Ref, next} ->
+      receive
+        {erqwest_response, Ref, error, Err} -> ok
+      end
+  end,
+  #{code := cancelled} = Err.
+
+stream_async_cancel_send_blocked(_Config) ->
+  {LSock, Url} = server:listen(),
+  Handle = erqwest_async:req(default, self(), Ref=make_ref(),
+                             #{ method => post
+                              , url => Url
+                              , body => stream
+                              , response_body => stream
+                              }),
+  _Sock = server:accept(LSock),
+  send_until_blocked(Handle, Ref),
+  ok = erqwest_async:cancel(Handle),
+  receive {erqwest_response, Ref, error, Err} -> ok end,
+  #{code := cancelled} = Err.
+
+stream_async_cancel_finish_send(_Config) ->
+  {LSock, Url} = server:listen(),
+  Handle = erqwest_async:req(default, self(), Ref=make_ref(),
+                             #{ method => post
+                              , url => Url
+                              , body => stream
+                              , response_body => stream
+                              }),
+  _Sock = server:accept(LSock),
+  ok = erqwest_async:finish_send(Handle),
+  ok = erqwest_async:cancel(Handle),
+  receive {erqwest_response, Ref, error, Err} -> ok end,
+  #{code := cancelled} = Err.
+
+stream_async_cancel_read(_Config) ->
+  {LSock, Url} = server:listen(),
+  Handle = erqwest_async:req(default, self(), Ref=make_ref(),
+                             #{ method => post
+                              , url => Url
+                              , body => stream
+                              , response_body => stream
+                              }),
+  Sock = server:accept(LSock),
+  ok = erqwest_async:finish_send(Handle),
+  server:read(Sock),
+  server:reply(Sock, []),
+  receive {erqwest_response, Ref, reply, _} -> ok end,
+  ok = erqwest_async:cancel(Handle),
+  receive {erqwest_response, Ref, error, Err} -> ok end,
+  #{code := cancelled} = Err.
+
+stream_connect_timeout(_Config) ->
+  {_LSock, Url} = server:listen(),
+  {handle, H} = erqwest:get(default, Url, #{timeout => 10, body => stream}),
+  timer:sleep(100),
+  {error, #{code := timeout}} = erqwest:send(H, <<"data">>).
+
+stream_response_timeout(_Config) ->
+  {ok, #{status := 200, body := H}} =
+    erqwest:get(default, <<"https://httpbin.org/drip">>,
+                #{timeout => 1000, response_body => stream}),
+  {error, #{code := timeout}} = erqwest:read(H).
+
+stream_handle_dropped_send(_Config) ->
+  %% If the ReqHandle is GC'd before finish_send has been called, we need to
+  %% ensure we do not indicate to the server that the request body is complete.
+  {LSock, Url} = server:listen(),
+  Sock = (fun() ->
+              {handle, _} = erqwest:post(default, Url, #{body => stream}),
+              Sock = server:accept(LSock),
+              Sock
+          end)(),
+  erlang:garbage_collect(),
+  Data = server:wait_for_close(Sock),
+  %% final chunk is indicated by 0\r\n\r\n
+  nomatch = string:find(Data, <<"0\r\n\r\n">>).
 
 %% helpers
 
@@ -422,3 +758,18 @@ eval_new_process(Fun, Env) ->
           [CodePath, Term]
          ),
   {ok, _} = exec:run(iolist_to_binary(Cmd), [sync, {env, Env}, {stdout, print}, {stderr, print}]).
+
+send_until_blocked(AsyncHandle, Ref) ->
+  Data = list_to_binary([0 || _ <- lists:seq(1, 1000)]),
+  send_until_blocked(AsyncHandle, Ref, Data, 0).
+
+send_until_blocked(AsyncHandle, Ref, Data, Sent) ->
+  ?assert(Sent < 100 * 1024 * 1024),
+  erqwest_async:send(AsyncHandle, Data),
+  receive
+    {erqwest_response, Ref, next} ->
+      send_until_blocked(AsyncHandle, Ref, Data, Sent + size(Data))
+  after 100 ->
+      ct:log("send_until_blocked: stopped after ~B bytes", [Sent]),
+      Sent
+  end.

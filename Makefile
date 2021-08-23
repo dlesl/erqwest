@@ -1,4 +1,4 @@
-.PHONY: ci ct dialyzer docs clean
+.PHONY: ci ct dialyzer docs clean shell
 
 all:
 	rebar3 compile
@@ -6,15 +6,20 @@ all:
 ci:
 	$(MAKE) ct dialyzer ERQWEST_FEATURES=cookies,gzip
 
-# using PROFILE=debug speeds up the cargo build significantly
+# using CARGO_PROFILE=debug speeds up the cargo build significantly
 ct:
-	PROFILE=debug rebar3 ct
+	CARGO_PROFILE=debug rebar3 ct
 
 dialyzer:
-	PROFILE=debug rebar3 as test dialyzer
+	CARGO_PROFILE=debug rebar3 as test dialyzer
 
 docs:
-	PROFILE=debug rebar3 edoc
+	CARGO_PROFILE=debug rebar3 edoc
 
 clean:
 	rebar3 clean
+
+shell:
+	rebar3 compile
+	ERL_LIBS="$$(rebar3 path --lib -s ":")" \
+		erl -eval 'application:start(erqwest), erqwest:start_client(c)'
