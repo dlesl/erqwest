@@ -30,7 +30,9 @@ pub struct ClientResource {
     pub runtime: ResourceArc<RuntimeResource>,
 }
 
-#[rustler::nif]
+// This is marked as "dirty" because it can take quite a while (around 30 ms according to
+// a quick timer:tc in the shell). `perf` suggests it is related to initialising TLS.
+#[rustler::nif(schedule = "DirtyCpu")]
 fn make_client(
     env: Env,
     runtime: ResourceArc<RuntimeResource>,
