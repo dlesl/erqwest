@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Module erqwest_async</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module erqwest_async</h1>
+<ul class="index"><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+
+
+<h2><a name="types">Data Types</a></h2>
+
+<h3 class="typedecl"><a name="type-handle">handle()</a></h3>
+<p><b>abstract datatype</b>: <tt>handle()</tt></p>
+
+
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cancel-1">cancel/1</a></td><td>Cancel an asynchronous request at any stage.</td></tr>
+<tr><td valign="top"><a href="#finish_send-1">finish_send/1</a></td><td>Complete sending the request body.</td></tr>
+<tr><td valign="top"><a href="#read-2">read/2</a></td><td>Read a chunk of the response body, waiting for at most <code>period</code> ms or
+  until at least <code>length</code> bytes have been read.</td></tr>
+<tr><td valign="top"><a href="#req-4">req/4</a></td><td>Make an asynchronous request.</td></tr>
+<tr><td valign="top"><a href="#send-2">send/2</a></td><td>Asynchronously stream a chunk of the request body.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="cancel-1">cancel/1</a></h3>
+<div class="spec">
+<p><tt>cancel(Handle::<a href="#type-handle">handle()</a>) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p>Cancel an asynchronous request at any stage. A reply will always still
+  be sent, either <code>{error, #{code := cancelled}}</code>, another <code>error</code> or a <code>reply</code>
+  depending on the state of the connection. Has no effect if the request has
+  already completed or was already cancelled.</p>
+
+<h3 class="function"><a name="finish_send-1">finish_send/1</a></h3>
+<div class="spec">
+<p><tt>finish_send(Handle::<a href="#type-handle">handle()</a>) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p>Complete sending the request body. The message flow continues as
+  described for <a docgen-rel="seemfa" docgen-href="#req/4" href="#req-4"><code>req/4</code></a>, ie. the next message will be <code>reply</code> or <code>error</code>.</p>
+
+<h3 class="function"><a name="read-2">read/2</a></h3>
+<div class="spec">
+<p><tt>read(Handle::<a href="#type-handle">handle()</a>, Opts::<a href="/home/runner/work/erqwest/erqwest/doc/erqwest.html#type-read_opts">erqwest:read_opts()</a>) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p>Read a chunk of the response body, waiting for at most <code>period</code> ms or
+  until at least <code>length</code> bytes have been read. Note that more than <code>length</code>
+  bytes can be returned. Replies with <code>{erqwest_response, Ref, chunk, Data}</code>,
+  <code>{erqwest_response, Ref, fin, Data}</code> or <code>{erqwest_response, Ref, error,
+  erqwest:err()}`. A `fin</code> or <code>error</code> response will be the final message.</p>
+
+<h3 class="function"><a name="req-4">req/4</a></h3>
+<div class="spec">
+<p><tt>req(Client::<a href="/home/runner/work/erqwest/erqwest/doc/erqwest.html#type-client">erqwest:client()</a> | atom(), Pid::pid(), Ref::any(), Req::<a href="/home/runner/work/erqwest/erqwest/doc/erqwest.html#type-req_opts">erqwest:req_opts()</a>) -&gt; <a href="#type-handle">handle()</a></tt><br></p>
+<p> </p>
+</div><p><p>Make an asynchronous request.</p>
+ 
+  <p>Response(s) will be sent to <code>Pid</code> in the following order:</p>
+ 
+  <p>* [if <code>body</code> is <code>stream</code>, see <a docgen-rel="seemfa" docgen-href="#send/2" href="#send-2"><code>send/2</code></a> and <a docgen-rel="seemfa" docgen-href="#finish_send/2" href="#finish_send-2"><code>finish_send/2</code></a>]</p>
+ 
+  <p>* <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> or
+  <code>{erqwest_response, Ref, error, erqwest:err()}</code></p>
+ 
+  <p>* [if <code>response_body</code> is <code>stream</code>, see <a docgen-rel="seemfa" docgen-href="#read/2" href="#read-2"><code>read/2</code></a>]</p>
+ 
+  <p>An <code>error</code> response is _always_ the final response. If streaming is not used, a  
+single reply is guaranteed.</p>
+ 
+  Fails with reason badarg if any argument is invalid or if the client has
+  already been closed.</p>
+
+<h3 class="function"><a name="send-2">send/2</a></h3>
+<div class="spec">
+<p><tt>send(Handle::<a href="#type-handle">handle()</a>, Data::iodata()) -&gt; ok</tt><br></p>
+<p> </p>
+</div><p>Asynchronously stream a chunk of the request body. Replies with
+  <code>{erqwest_response, Ref, next}</code> when the connection is ready to receive more
+  data. Replies with <code>{erqwest_response, Ref, error, erqwest:err()}</code> if
+  something goes wrong, or <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> if
+  the server has already decided to reply. Call <a docgen-rel="seeerl" docgen-href="finish_send" href="finish_send.html"><code>finish_send</code></a> when the
+  request body is complete.</p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc</i></p>
+</body>
+</html>

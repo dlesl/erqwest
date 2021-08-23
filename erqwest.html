@@ -31,6 +31,10 @@
 <p><tt>feature() = cookies | gzip</tt></p>
 
 
+<h3 class="typedecl"><a name="type-handle">handle()</a></h3>
+<p><b>abstract datatype</b>: <tt>handle()</tt></p>
+
+
 <h3 class="typedecl"><a name="type-header">header()</a></h3>
 <p><tt>header() = {binary(), binary()}</tt></p>
 
@@ -47,20 +51,20 @@
 <p><tt>proxy_spec() = #{url := binary(), basic_auth =&gt; {Username::binary(), Password::binary()}}</tt></p>
 
 
-<h3 class="typedecl"><a name="type-req">req()</a></h3>
-<p><tt>req() = #{url := binary(), method := <a href="#type-method">method()</a>, headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>}</tt></p>
-
-
-<h3 class="typedecl"><a name="type-req_handle">req_handle()</a></h3>
-<p><b>abstract datatype</b>: <tt>req_handle()</tt></p>
+<h3 class="typedecl"><a name="type-read_opts">read_opts()</a></h3>
+<p><tt>read_opts() = #{period =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, length =&gt; pos_integer()}</tt></p>
 
 
 <h3 class="typedecl"><a name="type-req_opts">req_opts()</a></h3>
-<p><tt>req_opts() = #{headers =&gt; [<a href="#type-header">header()</a>], body =&gt; binary(), timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>}</tt></p>
+<p><tt>req_opts() = #{url := binary(), method := <a href="#type-method">method()</a>, headers =&gt; [<a href="#type-header">header()</a>], body =&gt; iodata() | stream, response_body =&gt; complete | stream, timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-req_opts_optional">req_opts_optional()</a></h3>
+<p><tt>req_opts_optional() = #{headers =&gt; [<a href="#type-header">header()</a>], body =&gt; iodata() | stream, timeout =&gt; <a href="#type-timeout_ms">timeout_ms()</a>, body =&gt; iodata() | stream, response_body =&gt; complete | stream}</tt></p>
 
 
 <h3 class="typedecl"><a name="type-resp">resp()</a></h3>
-<p><tt>resp() = #{status := 100..599, body := binary(), headers := [<a href="#type-header">header()</a>]}</tt></p>
+<p><tt>resp() = #{status := 100..599, body := binary() | <a href="#type-handle">handle()</a>, headers := [<a href="#type-header">header()</a>]}</tt></p>
 
 
 <h3 class="typedecl"><a name="type-timeout_ms">timeout_ms()</a></h3>
@@ -68,16 +72,25 @@
 
 
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cancel-1">cancel/1</a></td><td>Cancel an asynchronous request.</td></tr>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cancel-1">cancel/1</a></td><td>Used to cancel streaming of a request or response body.</td></tr>
 <tr><td valign="top"><a href="#close_client-1">close_client/1</a></td><td>Close a client and idle connections in its pool.</td></tr>
+<tr><td valign="top"><a href="#delete-3">delete/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#feature-1">feature/1</a></td><td>Determines whether a compile-time feature is available.</td></tr>
+<tr><td valign="top"><a href="#finish_send-1">finish_send/1</a></td><td>Complete sending the request body.</td></tr>
 <tr><td valign="top"><a href="#get-2">get/2</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#get-3">get/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
-<tr><td valign="top"><a href="#make_client-0">make_client/0</a></td><td></td></tr>
-<tr><td valign="top"><a href="#make_client-1">make_client/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#make_client-0">make_client/0</a></td><td>Equivalent to <a href="#make_client-1"><tt>make_client(#{})</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#make_client-1">make_client/1</a></td><td>Make a new client with its own connection pool.</td></tr>
+<tr><td valign="top"><a href="#patch-3">patch/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#post-3">post/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
+<tr><td valign="top"><a href="#put-3">put/3</a></td><td>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</td></tr>
+<tr><td valign="top"><a href="#read-1">read/1</a></td><td>Equivalent to <a href="#read-2"><tt>read(Handle, #{})</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#read-2">read/2</a></td><td>Read a chunk of the response body, waiting for at most <code>period</code> ms or
+  until at least <code>length</code> bytes have been read.</td></tr>
 <tr><td valign="top"><a href="#req-2">req/2</a></td><td>Make a synchronous request.</td></tr>
-<tr><td valign="top"><a href="#req_async-4">req_async/4</a></td><td>Make an asynchronous request.</td></tr>
+<tr><td valign="top"><a href="#send-2">send/2</a></td><td>Stream a chunk of the request body.</td></tr>
 <tr><td valign="top"><a href="#start_client-1">start_client/1</a></td><td>Equivalent to <a href="#start_client-2"><tt>start_client(Name, #{})</tt></a>.
 </td></tr>
 <tr><td valign="top"><a href="#start_client-2">start_client/2</a></td><td>Start a client registered under <code>Name</code>.</td></tr>
@@ -88,12 +101,9 @@
 
 <h3 class="function"><a name="cancel-1">cancel/1</a></h3>
 <div class="spec">
-<p><tt>cancel(Handle::<a href="#type-req_handle">req_handle()</a>) -&gt; ok</tt><br></p>
+<p><tt>cancel(Handle::<a href="#type-handle">handle()</a>) -&gt; ok</tt><br></p>
 <p> </p>
-</div><p>Cancel an asynchronous request. A response will still be sent, with
-  payload <code>{error, #{code =&gt; cancelled}}</code> or another payload depending on the
-  state of the connection. Has no effect if the request has already completed
-  or was already cancelled.</p>
+</div><p>Used to cancel streaming of a request or response body.</p>
 
 <h3 class="function"><a name="close_client-1">close_client/1</a></h3>
 <div class="spec">
@@ -109,6 +119,12 @@ the VM.</p>
  
   Fails with reason badarg if the client has already been closed.</p>
 
+<h3 class="function"><a name="delete-3">delete/3</a></h3>
+<div class="spec">
+<p><tt>delete(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts_optional">req_opts_optional()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {handle, <a href="#type-handle">handle()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
+
 <h3 class="function"><a name="feature-1">feature/1</a></h3>
 <div class="spec">
 <p><tt>feature(Feature::<a href="#type-feature">feature()</a>) -&gt; boolean()</tt><br></p>
@@ -117,15 +133,22 @@ the VM.</p>
   by adding them to the environment variable <code>ERQWEST_FEATURES</code> (comma
   separated list) at build time.</p>
 
+<h3 class="function"><a name="finish_send-1">finish_send/1</a></h3>
+<div class="spec">
+<p><tt>finish_send(Handle::<a href="#type-handle">handle()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Complete sending the request body. Awaits the server's reply. Return
+  values are as described for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
+
 <h3 class="function"><a name="get-2">get/2</a></h3>
 <div class="spec">
-<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::binary()) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::binary()) -&gt; {ok, <a href="#type-resp">resp()</a>} | {handle, <a href="#type-handle">handle()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
 <h3 class="function"><a name="get-3">get/3</a></h3>
 <div class="spec">
-<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>get(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts_optional">req_opts_optional()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {handle, <a href="#type-handle">handle()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
@@ -133,41 +156,72 @@ the VM.</p>
 <div class="spec">
 <p><tt>make_client() -&gt; <a href="#type-client">client()</a></tt><br></p>
 <p> </p>
-</div>
+</div><p>Equivalent to <a href="#make_client-1"><tt>make_client(#{})</tt></a>.</p>
+
 
 <h3 class="function"><a name="make_client-1">make_client/1</a></h3>
 <div class="spec">
 <p><tt>make_client(Opts::<a href="#type-client_opts">client_opts()</a>) -&gt; <a href="#type-client">client()</a></tt><br></p>
 <p> </p>
-</div>
+</div><p>Make a new client with its own connection pool. See also <a docgen-rel="seemfa" docgen-href="#start_client/2" href="#start_client-2"><code>start_client/2</code></a>.</p>
 
-<h3 class="function"><a name="post-3">post/3</a></h3>
+<h3 class="function"><a name="patch-3">patch/3</a></h3>
 <div class="spec">
-<p><tt>post(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>patch(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts_optional">req_opts_optional()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {handle, <a href="#type-handle">handle()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
 
+<h3 class="function"><a name="post-3">post/3</a></h3>
+<div class="spec">
+<p><tt>post(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts_optional">req_opts_optional()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {handle, <a href="#type-handle">handle()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
+
+<h3 class="function"><a name="put-3">put/3</a></h3>
+<div class="spec">
+<p><tt>put(Client::<a href="#type-client">client()</a> | atom(), Url::binary(), Opts::<a href="#type-req_opts_optional">req_opts_optional()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {handle, <a href="#type-handle">handle()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Convenience wrapper for <a docgen-rel="seemfa" docgen-href="#req/2" href="#req-2"><code>req/2</code></a>.</p>
+
+<h3 class="function"><a name="read-1">read/1</a></h3>
+<div class="spec">
+<p><tt>read(Handle::<a href="#type-handle">handle()</a>) -&gt; {more, binary()} | {ok, binary()} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Equivalent to <a href="#read-2"><tt>read(Handle, #{})</tt></a>.</p>
+
+
+<h3 class="function"><a name="read-2">read/2</a></h3>
+<div class="spec">
+<p><tt>read(Handle::<a href="#type-handle">handle()</a>, Opts::map() | cancel) -&gt; {more, binary()} | {ok, binary()} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p> </p>
+</div><p>Read a chunk of the response body, waiting for at most <code>period</code> ms or
+  until at least <code>length</code> bytes have been read. Note that more than <code>length</code>
+  bytes can be returned. Returns <code>{more, binary()}</code> if there is more data to be
+  read, and <code>{ok, binary()}</code> once the body is complete.</p>
+
 <h3 class="function"><a name="req-2">req/2</a></h3>
 <div class="spec">
-<p><tt>req(Client::<a href="#type-client">client()</a> | atom(), Req::<a href="#type-req">req()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
+<p><tt>req(Client::<a href="#type-client">client()</a> | atom(), Req::<a href="#type-req_opts">req_opts()</a>) -&gt; {ok, <a href="#type-resp">resp()</a>} | {handle, <a href="#type-handle">handle()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p><p>Make a synchronous request.</p>
  
   Fails with reason badarg if any argument is invalid or if the client has
-  already been closed.</p>
+  already been closed. If you set <code>body</code> to <code>stream</code>, you will get back
+  <code>{handle, handle()}</code>, which you need to pass to <a docgen-rel="seemfa" docgen-href="#send/2" href="#send-2"><code>send/2</code></a> and <a docgen-rel="seemfa" docgen-href="#finish_send/1" href="#finish_send-1"><code>finish_send/1</code></a> to stream the request body. If you set <code>response_body</code> to
+  <code>stream</code>, the <code>body</code> key in <code>resp()</code> be a <code>handle()</code> that you need to pass to
+  <code>read</code> to consume the response body. If you decide not to consume the
+  response body, call <a docgen-rel="seemfa" docgen-href="#discard_body/1" href="#discard_body-1"><code>discard_body/1</code></a>.</p>
 
-<h3 class="function"><a name="req_async-4">req_async/4</a></h3>
+<h3 class="function"><a name="send-2">send/2</a></h3>
 <div class="spec">
-<p><tt>req_async(Client::<a href="#type-client">client()</a> | atom(), Pid::pid(), Ref::any(), Req::<a href="#type-req">req()</a>) -&gt; <a href="#type-req_handle">req_handle()</a></tt><br></p>
+<p><tt>send(Handle::<a href="#type-handle">handle()</a>, Data::iodata()) -&gt; ok | {reply, <a href="#type-resp">resp()</a>} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
-</div><p><p>Make an asynchronous request.</p>
- 
-  <p>A single response of the form
-  <code>{erqwest_response, Ref, {ok, resp()} | {error, err()}}</code> is guaranteed to be
-  sent to <code>Pid</code>.</p>
- 
-  Fails with reason badarg if any argument is invalid or if the client has
-  already been closed.</p>
+</div><p>Stream a chunk of the request body. Returns <code>ok</code> once the chunk has
+  successfully been queued for transmission. Note that due to buffering this
+  does not mean that the chunk has actually been sent. Blocks once the internal
+  buffer is full. Call <a docgen-rel="seemfa" docgen-href="#finish_send/1" href="#finish_send-1"><code>finish_send/1</code></a> once the body is complete.
+  <code>{reply, resp()}</code> is returned if the server chooses to reply before the
+  request body is complete.</p>
 
 <h3 class="function"><a name="start_client-1">start_client/1</a></h3>
 <div class="spec">
