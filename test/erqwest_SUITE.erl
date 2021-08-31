@@ -78,6 +78,9 @@ end_per_group(_Group, _Config) ->
 init_per_testcase(_Case, Config) ->
   Config.
 
+end_per_testcase(time_nifs, _Config) ->
+  %% this test generates a lot of stray messages
+  ok;
 end_per_testcase(Case, _Config) ->
   receive
     Msg -> ct:fail("stray message detected after ~p: ~p", [Case, Msg])
@@ -100,6 +103,10 @@ groups() ->
      , redirect_no_follow
      , redirect_limited
      , kill_process
+     , bad_header_key
+     , bad_header_value
+     , bad_url
+     , bad_body
      ]}
   , {client_cert, [parallel],
      [ with_cert
@@ -161,6 +168,9 @@ groups() ->
      , stream_response_timeout
      , stream_handle_dropped_send
      ]}
+  , {time_nifs, [{repeat, 5}],
+     [ time_nifs
+     ]}
   ].
 
 all() ->
@@ -172,6 +182,7 @@ all() ->
   , {group, runtime}
   , {group, gzip}
   , {group, stream}
+  , {group, time_nifs}
   ].
 
 get(_Config) ->
@@ -245,6 +256,29 @@ kill_process(_Config) ->
 %% exit(Pid, kill),
 %% receive {'EXIT', Pid, killed} -> ok end,
 %% server:wait_for_close(Sock).
+
+bad_header_key(_Config) ->
+  {error, #{code := request}} =
+    erqwest:get(default, <<"https://httpbin.org/get">>,
+                #{headers => [{<<"ånej, latin-1!">>, <<"value">>}]}).
+
+bad_header_value(_Config) ->
+  {ok, _} = erqwest:get(default, <<"https://httpbin.org/get">>,
+                        #{headers => [{<<"name">>, <<"latin-1 tillåts här">>}]}),
+  {error, #{code := request}} =
+    erqwest:get(default, <<"https://httpbin.org/get">>,
+                #{headers => [{<<"name">>, <<"byte ", 127, " isn't allowed">>}]}).
+
+bad_url(_Config) ->
+  {ok, _} = erqwest:get(default, <<"https://httpbin.org/get?q=🌐"/utf8>>),
+  {error, #{code := url}} = erqwest:get(default, <<"https://httpbin.org/get?q=nä">>),
+  {error, #{code := url}} = erqwest:get(default, <<"not even trying">>).
+
+-dialyzer({nowarn_function, bad_body/1}).
+bad_body(_Config) ->
+  {error, #{code := request}} =
+    erqwest:post(default, <<"https://httpbin.org/post">>,
+                 #{body => [<<"this">>, is_not_iodata]}).
 
 with_cert(Config) ->
   C = erqwest:make_client(#{identity => {?config(cert, Config), ?config(pass, Config)}}),
@@ -491,9 +525,7 @@ stream_both_success(_Config) ->
   ?assertException(error, badarg, erqwest:read(H)).
 
 stream_request_invalid(_Config) ->
-  {handle, H} = erqwest:post(default, <<"invalid">>, #{body => stream}),
-  {error, #{code := unknown}} = erqwest:send(H, <<"data">>),
-  ?assertException(error, badarg, erqwest:send(H, <<"fail">>)).
+  {error, #{code := url}} = erqwest:post(default, <<"invalid">>, #{body => stream}).
 
 stream_request_backpressure(_Config) ->
   {LSock, Url} = server:listen(),
@@ -502,6 +534,7 @@ stream_request_backpressure(_Config) ->
                                                           , body => stream
                                                           }),
 
+  receive {erqwest_response, Ref, next} -> ok end,
   BytesSent = send_until_blocked(H, Ref),
   Sock = server:accept(LSock),
   server:read_silent(Sock, BytesSent),
@@ -568,9 +601,10 @@ stream_response_cancel(_Config) ->
 
 stream_wrong_process(_Config) ->
   Self = self(),
+  {_, Url} = server:listen(),
   spawn_link(fun() ->
                  {handle, Handle} =
-                   erqwest:post(default, <<"invalid">>,
+                   erqwest:post(default, Url,
                                 #{body => stream, response_body => stream}),
                  Self ! Handle
              end),
@@ -589,6 +623,7 @@ stream_async_success(_Config) ->
                               , body => stream
                               , response_body => stream
                               }),
+  receive {erqwest_response, Ref, next} -> ok end,
   ok = erqwest_async:send(Handle, Data1),
   receive {erqwest_response, Ref, next} -> ok end,
   ok = erqwest_async:send(Handle, Data2),
@@ -615,6 +650,7 @@ stream_async_cancel_connect(_Config) ->
                               , body => stream
                               , response_body => stream
                               }),
+  receive {erqwest_response, Ref, next} -> ok end,
   ok = erqwest_async:cancel(Handle),
   receive
     {erqwest_response, Ref, error, Err} ->
@@ -629,7 +665,9 @@ stream_async_cancel_send(_Config) ->
                               , body => stream
                               , response_body => stream
                               }),
+  receive {erqwest_response, Ref, next} -> ok end,
   _Sock = server:accept(LSock),
+  timer:sleep(100),
   ok = erqwest_async:send(Handle, <<"data">>),
   ok = erqwest_async:cancel(Handle),
   %% we might get a `next` before our `error`
@@ -651,6 +689,7 @@ stream_async_cancel_send_blocked(_Config) ->
                               , body => stream
                               , response_body => stream
                               }),
+  receive {erqwest_response, Ref, next} -> ok end,
   _Sock = server:accept(LSock),
   send_until_blocked(Handle, Ref),
   ok = erqwest_async:cancel(Handle),
@@ -665,6 +704,7 @@ stream_async_cancel_finish_send(_Config) ->
                               , body => stream
                               , response_body => stream
                               }),
+  receive {erqwest_response, Ref, next} -> ok end,
   _Sock = server:accept(LSock),
   ok = erqwest_async:finish_send(Handle),
   ok = erqwest_async:cancel(Handle),
@@ -679,6 +719,7 @@ stream_async_cancel_read(_Config) ->
                               , body => stream
                               , response_body => stream
                               }),
+  receive {erqwest_response, Ref, next} -> ok end,
   Sock = server:accept(LSock),
   ok = erqwest_async:finish_send(Handle),
   server:read(Sock),
@@ -713,6 +754,85 @@ stream_handle_dropped_send(_Config) ->
   Data = server:wait_for_close(Sock),
   %% final chunk is indicated by 0\r\n\r\n
   nomatch = string:find(Data, <<"0\r\n\r\n">>).
+
+
+%% This test case doesn't fail, it's just for the logs. You probably want to run
+%% it with a release build of the NIF.
+
+-define(timed(Fun), (fun() -> {Time, Res} = timer:tc(Fun),
+                              ct:log("~s took ~B µs", [??Fun, Time]),
+                              Res
+                     end)()).
+
+time_nifs(_Config) ->
+  ?timed(fun() -> erqwest_nif:feature(cookies) end),
+  Runtime = ?timed(fun() -> erqwest_nif:start_runtime(self()) end),
+  Client = ?timed(fun() -> erqwest_nif:make_client(Runtime, #{}) end),
+  ?timed(fun() ->
+             erqwest_nif:req(Client, self(), no_ref,
+                             #{ method => get
+                              , url => <<"invalid">>
+                              })
+         end),
+  BigBody = binary:copy(<<0>>, 1024 * 1024),
+  ?timed(fun() ->
+             erqwest_nif:req(Client, self(), no_ref,
+                             #{ method => post
+                              , url => <<"invalid">>
+                              , body => BigBody
+                              })
+         end),
+  ManyHeaders =
+    [{<<"test">>,
+      <<"the quick brown fox jumped over the lazy dog and a 64 byte-long binary ",
+        (integer_to_binary(I))/binary>>}
+     || I <- lists:seq(1, 100)],
+  ?timed(fun() ->
+             erqwest_nif:req(Client, self(), no_ref,
+                             #{ method => post
+                              , url => <<"invalid">>
+                              , headers => ManyHeaders
+                              })
+         end),
+  WithHandle =
+    fun(WrappedFun) ->
+        Ref = make_ref(),
+        Self = self(),
+        {LSock, Url} = server:listen(),
+        Handle = ?timed(fun() ->
+                            erqwest_nif:req(Client, Self, Ref,
+                                            #{ method => post
+                                             , url => Url
+                                             , body => stream
+                                             , response_body => stream
+                                             })
+                        end),
+        receive {erqwest_response, Ref, next} -> ok end,
+        Sock = server:accept(LSock),
+        server:read(Sock),
+        ReplyFun = fun() -> server:reply(Sock, []) end,
+        WrappedFun(Handle, Ref, ReplyFun)
+    end,
+  WithHandle(fun(Handle, _, _) ->
+                 ?timed(fun() -> erqwest_nif:send(Handle, BigBody) end)
+             end),
+  WithHandle(fun(Handle, _, _) ->
+                 ?timed(fun() -> erqwest_nif:finish_send(Handle) end)
+             end),
+  WithHandle(fun(Handle, _, _) ->
+                 ?timed(fun() -> erqwest_nif:cancel_stream(Handle) end)
+             end),
+  WithHandle(fun(Handle, _, _) ->
+                 ?timed(fun() -> erqwest_nif:cancel(Handle) end)
+             end),
+  WithHandle(fun(Handle, Ref, ReplyFun) ->
+                 ?timed(fun() -> erqwest_nif:finish_send(Handle) end),
+                 ReplyFun(),
+                 receive {erqwest_response, Ref, reply, _} -> ok end,
+                 ?timed(fun() -> erqwest_nif:read(Handle, #{period => 0}) end)
+             end),
+  ?timed(fun() -> erqwest_nif:close_client(Client) end),
+  ?timed(fun() -> erqwest_nif:stop_runtime(Runtime) end).
 
 %% helpers
 

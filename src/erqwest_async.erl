@@ -15,15 +15,18 @@
 %%
 %% Response(s) will be sent to `Pid' in the following order:
 %%
-%% * [if `body' is `stream', see {@link send/2} and {@link finish_send/2}]
+%% * If `body' is `stream', and the request was successfully initated,
+%% `{erqwest_response, Ref, next}'. See {@link send/2} and {@link finish_send/2}
+%% for how to respond. It is also possible to receive an `error' response as
+%% described below.
 %%
 %% * `{erqwest_response, Ref, reply, erqwest:resp()}' or
 %% `{erqwest_response, Ref, error, erqwest:err()}'
 %%
-%% * [if `response_body' is `stream', see {@link read/2}]
+%% * If `response_body' is `stream', see {@link read/2}
 %%
-%% An `error' response is _always_ the final response. If streaming is not used, a
-%% single reply is guaranteed.
+%% An `error' response is _always_ the final response. If streaming is not used,
+%% a single reply is guaranteed.
 %%
 %% Fails with reason badarg if any argument is invalid or if the client has
 %% already been closed.
