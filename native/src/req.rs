@@ -1,6 +1,7 @@
-use futures::channel::mpsc::{self, Sender, UnboundedReceiver};
+use futures::channel::mpsc::{self, Receiver, Sender, UnboundedReceiver};
 use futures::future::{AbortHandle, Abortable, OptionFuture};
 use futures::{Future, SinkExt, StreamExt};
+use reqwest::header::{HeaderName, HeaderValue};
 use rustler::env::SavedTerm;
 use rustler::types::map;
 use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
@@ -9,6 +10,7 @@ use std::borrow::BorrowMut;
 use std::convert::Infallible;
 use std::io::Write;
 use std::pin::Pin;
+use std::str;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{self, ThreadId};
@@ -59,6 +61,7 @@ struct ReqBase {
 #[derive(NifUnitEnum, Debug)]
 enum ErrorCode {
     Cancelled,
+    Url,
     Request,
     Redirect,
     Connect,
@@ -74,10 +77,10 @@ struct Error {
 }
 
 impl Error {
-    fn cancelled(reason: impl Into<String>) -> Error {
+    fn from_reason(code: ErrorCode, reason: impl ToString) -> Error {
         Error {
-            code: ErrorCode::Cancelled,
-            reason: reason.into(),
+            code,
+            reason: reason.to_string(),
         }
     }
 }
@@ -98,8 +101,7 @@ impl From<reqwest::Error> for Error {
         } else {
             Unknown
         };
-        let reason = e.to_string();
-        Error { code, reason }
+        Error::from_reason(code, e)
     }
 }
 
@@ -127,7 +129,7 @@ impl Encoder for CallerRef {
 
 /// Sent when erlang is streaming the request body
 enum SendCmd {
-    Send(Vec<u8>),
+    Send(OwnedEnv, SavedTerm),
     FinishSend,
 }
 
@@ -172,7 +174,61 @@ impl Resp {
     }
 }
 
-struct Request {
+struct ReqData {
+    client: reqwest::Client,
+    env: OwnedEnv,
+    headers: Vec<(SavedTerm, SavedTerm)>,
+    url: SavedTerm,
+    method: Method,
+    body: Option<ReqBody>,
+    timeout: Option<Duration>,
+}
+
+impl ReqData {
+    fn decode(self) -> Result<reqwest::RequestBuilder, Error> {
+        let ReqData {
+            client,
+            env,
+            headers,
+            url,
+            method,
+            body,
+            timeout,
+        } = self;
+        // we use unwrap for the binaries we checked the types of before saving
+        env.run(|e| {
+            let bin = url.load(e).decode::<Binary>().unwrap();
+            let s = str::from_utf8(&bin).map_err(|e| Error::from_reason(ErrorCode::Url, e))?;
+            let url = reqwest::Url::parse(s).map_err(|e| Error::from_reason(ErrorCode::Url, e))?;
+            let mut builder = client.request(method.into(), url);
+            for (k, v) in headers {
+                let k = HeaderName::from_bytes(&k.load(e).decode::<Binary>().unwrap())
+                    .map_err(|e| Error::from_reason(ErrorCode::Request, e))?;
+                let v = HeaderValue::from_bytes(&v.load(e).decode::<Binary>().unwrap())
+                    .map_err(|e| Error::from_reason(ErrorCode::Request, e))?;
+                builder = builder.header(k, v);
+            }
+            if let Some(timeout) = timeout {
+                builder = builder.timeout(timeout);
+            }
+            match body {
+                Some(ReqBody::Complete(iodata)) => {
+                    // we don't know if this is valid iodata()
+                    let iodata = iodata
+                        .load(e)
+                        .decode_as_binary()
+                        .map_err(|_| Error::from_reason(ErrorCode::Request, "bad request body"))?;
+                    builder = builder.body(iodata.to_vec());
+                }
+                Some(ReqBody::Stream(rx)) => builder = builder.body(reqwest::Body::wrap_stream(rx)),
+                None => (),
+            }
+            Ok(builder)
+        })
+    }
+}
+
+struct Req {
     caller_ref: Option<CallerRef>,
     caller_pid: LocalPid,
     initial_thread: ThreadId,
@@ -191,7 +247,7 @@ struct Request {
     resp_stream_rx: Option<UnboundedReceiver<ReadOpts>>,
 }
 
-impl Request {
+impl Req {
     /// Creating an `OwnedEnv` has a (small) cost. When it's time to send the
     /// final message, we exploit the fact that `CallerRef` has an `OwnedEnv`
     /// that will no longer be needed. `take`ing the `CallerRef` signals to the
@@ -212,7 +268,14 @@ impl Request {
     fn reply_none(&mut self) {
         self.caller_ref.take().unwrap();
     }
-    async fn run(mut self, builder: reqwest::RequestBuilder) {
+    async fn run(mut self, req_data: ReqData) {
+        let builder = match req_data.decode() {
+            Ok(builder) => builder,
+            Err(e) => {
+                self.reply_error(e);
+                return;
+            }
+        };
         let resp = builder.send();
         tokio::pin!(resp);
         let res = if let Some((mut tx, rx)) = self.req_body_channels.take() {
@@ -293,30 +356,39 @@ impl Request {
         mut resp: &mut Pin<&mut impl Future<Output = reqwest::Result<reqwest::Response>>>,
         tx: &mut Sender<Result<Vec<u8>, Infallible>>,
         mut rx: UnboundedReceiver<SendCmd>,
-    ) -> Option<reqwest::Result<reqwest::Response>> {
+    ) -> Option<Result<reqwest::Response, Error>> {
         let env = OwnedEnv::new();
         let term_next = env.run(|e| {
-            env.save(
-                (
-                    atoms::erqwest_response(),
-                    &self.caller_ref.as_ref().unwrap(),
-                    atoms::next(),
-                )
-                    .encode(e),
+            let term = (
+                atoms::erqwest_response(),
+                &self.caller_ref.as_ref().unwrap(),
+                atoms::next(),
             )
+                .encode(e);
+            e.send(&self.caller_pid, term);
+            env.save(term)
         });
         let mut fin = false;
         loop {
             tokio::select! {
                 next = rx.next(), if !fin =>
                     match next {
-                        Some(SendCmd::Send(data)) => {
-                            let feed = tx.feed(Ok(data));
+                        Some(SendCmd::Send(term_env, term)) => {
+                            let data = term_env.run(|e| term.load(e).decode_as_binary().map(|d| d.to_vec()).map_err(|_|
+                               Error::from_reason(
+                                    ErrorCode::Request,
+                                    "invalid iodata"
+                               )
+                            ));
+                            let feed = match data {
+                                Err(e) => return Some(Err(e)),
+                                Ok(data) => tx.feed(Ok(data))
+                            };
                             tokio::select! {
                                 Ok(()) = feed =>
                                     env.run(|env| env.send(&self.caller_pid, term_next.load(env))),
                                 // the caller is waiting for a response so we can reply immediately
-                                res = &mut resp => return Some(res)
+                                res = &mut resp => return Some(res.map_err(Error::from))
                             }
                         },
                         Some(SendCmd::FinishSend) => {
@@ -333,7 +405,7 @@ impl Request {
                 res = &mut resp => {
                     if fin {
                         // the caller is waiting for a response so reply immediately
-                        return Some(res)
+                        return Some(res.map_err(Error::from))
                     } else {
                         // the caller is not expecting a response yet so wait for the next command
                         if rx.next().await.is_none() {
@@ -341,7 +413,7 @@ impl Request {
                             // can, so we exit without replying
                             return None
                         } else {
-                            return Some(res)
+                            return Some(res.map_err(Error::from))
                         }
                     }
                 }
@@ -432,7 +504,7 @@ impl Request {
     }
 }
 
-impl Drop for Request {
+impl Drop for Req {
     fn drop(&mut self) {
         if self.caller_ref.is_some() {
             if thread::current().id() == self.initial_thread {
@@ -444,7 +516,7 @@ impl Drop for Request {
                     .borrow_mut()
                     .store(true, Ordering::Relaxed);
             } else {
-                self.reply_error(Error::cancelled("future dropped"));
+                self.reply_error(Error::from_reason(ErrorCode::Cancelled, "future dropped"));
             }
         }
     }
@@ -494,14 +566,19 @@ enum ResponseBody {
     Complete,
 }
 
+enum ReqBody {
+    Complete(SavedTerm),
+    Stream(Receiver<Result<Vec<u8>, Infallible>>),
+}
+
 #[rustler::nif]
 fn req(
+    env: Env,
     resource: ResourceArc<ClientResource>,
     pid: LocalPid,
     caller_ref: Term,
     opts: Term,
 ) -> NifResult<ResourceArc<ReqHandle>> {
-    let ReqBase { url, method } = opts.decode_or_raise()?;
     // returns BadArg if the client was already closed with close_client
     let client = resource
         .client
@@ -510,28 +587,45 @@ fn req(
         .as_ref()
         .ok_or(rustler::Error::BadArg)?
         .clone();
-    let mut req_builder = client.request(method.into(), url);
     let mut req_body_tx = None;
     let mut req_body_channels = None;
     let mut resp_stream_tx = None;
     let mut resp_stream_rx = None;
+    let mut headers = None;
+    let mut url = None;
+    let mut body = None;
+    let mut timeout = None;
+    let mut method = None;
+    let owned_env = OwnedEnv::new();
+
     for (k, v) in opts.decode::<MapIterator>()? {
         let k: Atom = k.decode()?;
-        if k == atoms::headers() {
-            for h in v.decode::<ListIterator>()? {
-                let (k, v): (&str, &str) = h.decode_or_raise()?;
-                req_builder = req_builder.header(k, v);
+        if k == atoms::url() {
+            url = Some(owned_env.save(v.decode::<Binary>()?.to_term(env)));
+        } else if k == atoms::method() {
+            method = Some(v.decode_or_raise()?);
+        } else if k == atoms::headers() {
+            let mut owned_headers = Vec::new();
+            for h in v.decode_or_raise::<ListIterator>()? {
+                let (hk, hv): (Binary, Binary) = h.decode_or_raise()?;
+                owned_headers.push((
+                    owned_env.save(hk.to_term(env)),
+                    owned_env.save(hv.to_term(env)),
+                ));
             }
+            headers = Some(owned_headers);
         } else if k == atoms::body() {
-            if let Ok(body) = v.decode_as_binary() {
-                req_builder = req_builder.body(body.as_slice().to_owned());
-            } else {
-                v.decode_or_raise::<StreamBody>()?;
+            if v.decode_or_raise::<StreamBody>().is_ok() {
                 let (tx, rx) = mpsc::channel::<Result<Vec<u8>, Infallible>>(0);
                 let (body_tx, body_rx0) = mpsc::unbounded();
-                req_builder = req_builder.body(reqwest::Body::wrap_stream(rx));
+                body = Some(ReqBody::Stream(rx));
                 req_body_tx = Some(body_tx);
                 req_body_channels = Some((tx, body_rx0));
+            } else {
+                body = Some(ReqBody::Complete(
+                    // we don't validate that this is a binary, because it might also be iodata()
+                    owned_env.save(v),
+                ));
             }
         } else if k == atoms::response_body() {
             match v.decode_or_raise()? {
@@ -543,14 +637,24 @@ fn req(
                 }
             }
         } else if k == atoms::timeout() {
-            if let Some(timeout) = maybe_timeout(v)? {
-                req_builder = req_builder.timeout(timeout);
-            }
-        } else if k != atoms::method() && k != atoms::url() {
+            timeout = maybe_timeout(v)?;
+        } else {
             return Err(rustler::Error::RaiseTerm(Box::new((atoms::bad_opt(), k))));
         }
     }
-    let req = Request {
+
+    req_consume_timeslice(env, headers.as_ref().map(|h| h.len()).unwrap_or(0));
+
+    let req_data = ReqData {
+        client,
+        env: owned_env,
+        headers: headers.unwrap_or_default(),
+        url: url.ok_or(rustler::Error::BadArg)?,
+        method: method.ok_or(rustler::Error::BadArg)?,
+        body,
+        timeout,
+    };
+    let req = Req {
         caller_ref: Some(caller_ref.into()),
         caller_pid: pid,
         dropped_on_initial_thread: Arc::new(AtomicBool::new(false)),
@@ -562,7 +666,7 @@ fn req(
     // sent to another thread), which indicates that the Runtime is shutting
     // down or has shut down.
     let dropped_on_initial_thread = req.dropped_on_initial_thread.clone();
-    let fut = req.run(req_builder);
+    let fut = req.run(req_data);
     let (abort_handle, abort_registration) = AbortHandle::new_pair();
     resource
         .runtime
@@ -575,6 +679,18 @@ fn req(
             req_body_tx,
             resp_stream_tx,
         }))
+    }
+}
+
+/// Give the scheduler an estimate of how much time the `req` call has used.
+/// Since copying binaries is cheap (due to refcounting), the main variable is
+/// the number of headers. Taking numbers from the `time_nifs` testcase on my
+/// machine, `req` with no headers takes ~30 µs and with 100 headers ~90 µs, so
+/// let's say 0.6 µs per header. A "timeslice" is 1 ms.
+fn req_consume_timeslice(env: Env, headers: usize) {
+    let percent = (300 + (6 * headers)) / 100;
+    if percent > 0 {
+        rustler::schedule::consume_timeslice(env, std::cmp::min(percent, 100) as i32);
     }
 }
 
@@ -603,15 +719,13 @@ fn cancel_stream(req_handle: ResourceArc<ReqHandle>) -> Atom {
 
 /// Stream a chunk of the request body
 #[rustler::nif]
-fn send<'a>(
-    env: Env<'a>,
-    req_handle: ResourceArc<ReqHandle>,
-    data: Term<'a>,
-) -> NifResult<Term<'a>> {
+fn send<'a>(req_handle: ResourceArc<ReqHandle>, data: Term<'a>) -> NifResult<Atom> {
     if let Some(body_tx) = req_handle.req_body_tx.as_ref() {
-        let cmd = SendCmd::Send(data.decode_as_binary()?.to_vec());
+        let env = OwnedEnv::new();
+        let term = env.save(data);
+        let cmd = SendCmd::Send(env, term);
         if body_tx.unbounded_send(cmd).is_ok() {
-            return Ok(atoms::ok().encode(env));
+            return Ok(atoms::ok());
         }
     }
     Err(rustler::Error::BadArg)

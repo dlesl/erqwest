@@ -82,7 +82,7 @@
                  , body := binary() | handle()
                  , headers := [header()]
                  }.
--type err() :: #{ code := timeout | redirect | connect | request | body | cancelled | unknown
+-type err() :: #{ code := timeout | redirect | url | connect | request | body | cancelled | unknown
                 , reason := binary()
                 }.
 -type feature() :: cookies | gzip.
@@ -166,7 +166,12 @@ get_client(Client) ->
         {ok, resp()} | {handle, handle()} | {error, err()}.
 req(Client, #{body := stream}=Req) ->
   Inner = erqwest_nif:req(get_client(Client), self(), Ref=make_ref(), Req),
-  {handle, #handle{inner=Inner, ref=Ref, owner=self()}};
+  receive
+    {erqwest_response, Ref, next} ->
+      {handle, #handle{inner=Inner, ref=Ref, owner=self()}};
+    {erqwest_response, Ref, error, Resp} ->
+      {error, Resp}
+  end;
 req(Client, Req) ->
   Inner = erqwest_nif:req(get_client(Client), self(), Ref=make_ref(), Req),
   receive

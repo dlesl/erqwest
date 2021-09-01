@@ -40,7 +40,7 @@ impl Drop for Monitor {
     }
 }
 
-#[rustler::nif]
+#[rustler::nif(schedule = "DirtyCpu")]
 fn start_runtime(monitor_pid: LocalPid) -> ResourceArc<RuntimeResource> {
     let monitor = Monitor { pid: monitor_pid };
     let (handle_tx, handle_rx) = std::sync::mpsc::channel();

@@ -22,4 +22,4 @@ clean:
 shell:
 	rebar3 compile
 	ERL_LIBS="$$(rebar3 path --lib -s ":")" \
-		erl -eval 'application:start(erqwest), erqwest:start_client(c)'
+		erl -eval 'logger:set_primary_config(level, debug), application:start(erqwest), erqwest:start_client(c)'
