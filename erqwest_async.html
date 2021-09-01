@@ -64,15 +64,18 @@
  
   <p>Response(s) will be sent to <code>Pid</code> in the following order:</p>
  
-  <p>* [if <code>body</code> is <code>stream</code>, see <a docgen-rel="seemfa" docgen-href="#send/2" href="#send-2"><code>send/2</code></a> and <a docgen-rel="seemfa" docgen-href="#finish_send/2" href="#finish_send-2"><code>finish_send/2</code></a>]</p>
+  <p>* If <code>body</code> is <code>stream</code>, and the request was successfully initated,
+  <code>{erqwest_response, Ref, next}</code>. See <a docgen-rel="seemfa" docgen-href="#send/2" href="#send-2"><code>send/2</code></a> and <a docgen-rel="seemfa" docgen-href="#finish_send/2" href="#finish_send-2"><code>finish_send/2</code></a>
+  for how to respond. It is also possible to receive an <code>error</code> response as  
+described below.</p>
  
   <p>* <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> or
   <code>{erqwest_response, Ref, error, erqwest:err()}</code></p>
  
-  <p>* [if <code>response_body</code> is <code>stream</code>, see <a docgen-rel="seemfa" docgen-href="#read/2" href="#read-2"><code>read/2</code></a>]</p>
+  <p>* If <code>response_body</code> is <code>stream</code>, see <a docgen-rel="seemfa" docgen-href="#read/2" href="#read-2"><code>read/2</code></a></p>
  
-  <p>An <code>error</code> response is _always_ the final response. If streaming is not used, a  
-single reply is guaranteed.</p>
+  <p>An <code>error</code> response is _always_ the final response. If streaming is not used,  
+a single reply is guaranteed.</p>
  
   Fails with reason badarg if any argument is invalid or if the client has
   already been closed.</p>
