@@ -195,9 +195,10 @@ the VM.</p>
 <p><tt>read(Handle::<a href="#type-handle">handle()</a>, Opts::map() | cancel) -&gt; {more, binary()} | {ok, binary()} | {error, <a href="#type-err">err()</a>}</tt><br></p>
 <p> </p>
 </div><p>Read a chunk of the response body, waiting for at most <code>period</code> ms or
-  until at least <code>length</code> bytes have been read. Note that more than <code>length</code>
-  bytes can be returned. Returns <code>{more, binary()}</code> if there is more data to be
-  read, and <code>{ok, binary()}</code> once the body is complete.</p>
+  until at least <code>length</code> bytes have been read. <code>length</code> defaults to 8 MB if
+  omitted, and <code>period</code> to <code>infinity</code>. Note that more than <code>length</code> bytes can
+  be returned. Returns <code>{more, binary()}</code> if there is more data to be read, and
+  <code>{ok, binary()}</code> once the body is complete.</p>
 
 <h3 class="function"><a name="req-2">req/2</a></h3>
 <div class="spec">
@@ -210,7 +211,7 @@ the VM.</p>
   <code>{handle, handle()}</code>, which you need to pass to <a docgen-rel="seemfa" docgen-href="#send/2" href="#send-2"><code>send/2</code></a> and <a docgen-rel="seemfa" docgen-href="#finish_send/1" href="#finish_send-1"><code>finish_send/1</code></a> to stream the request body. If you set <code>response_body</code> to
   <code>stream</code>, the <code>body</code> key in <code>resp()</code> be a <code>handle()</code> that you need to pass to
   <code>read</code> to consume the response body. If you decide not to consume the
-  response body, call <a docgen-rel="seemfa" docgen-href="#discard_body/1" href="#discard_body-1"><code>discard_body/1</code></a>.</p>
+  response body, call <a docgen-rel="seemfa" docgen-href="#cancel/1" href="#cancel-1"><code>cancel/1</code></a>.</p>
 
 <h3 class="function"><a name="send-2">send/2</a></h3>
 <div class="spec">

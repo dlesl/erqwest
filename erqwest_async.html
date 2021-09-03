@@ -52,9 +52,11 @@
 <p> </p>
 </div><p>Read a chunk of the response body, waiting for at most <code>period</code> ms or
   until at least <code>length</code> bytes have been read. Note that more than <code>length</code>
-  bytes can be returned. Replies with <code>{erqwest_response, Ref, chunk, Data}</code>,
-  <code>{erqwest_response, Ref, fin, Data}</code> or <code>{erqwest_response, Ref, error,
-  erqwest:err()}`. A `fin</code> or <code>error</code> response will be the final message.</p>
+  bytes can be returned. <code>length</code> defaults to 8 MB if omitted, and <code>period</code> to
+  <code>infinity</code>. Note that more than <code>length</code> bytes can be returned. Replies with
+  <code>{erqwest_response, Ref, chunk, Data}</code>, <code>{erqwest_response, Ref, fin, Data}</code>
+  or <code>{erqwest_response, Ref, error, erqwest:err()}`. A `fin</code> or <code>error</code>
+  response will be the final message.</p>
 
 <h3 class="function"><a name="req-4">req/4</a></h3>
 <div class="spec">
@@ -62,17 +64,18 @@
 <p> </p>
 </div><p><p>Make an asynchronous request.</p>
  
-  <p>Response(s) will be sent to <code>Pid</code> in the following order:</p>
+  <p>A Response will be sent to <code>Pid</code> as follows:</p>
  
   <p>* If <code>body</code> is <code>stream</code>, and the request was successfully initated,
   <code>{erqwest_response, Ref, next}</code>. See <a docgen-rel="seemfa" docgen-href="#send/2" href="#send-2"><code>send/2</code></a> and <a docgen-rel="seemfa" docgen-href="#finish_send/2" href="#finish_send-2"><code>finish_send/2</code></a>
-  for how to respond. It is also possible to receive an <code>error</code> response as  
-described below.</p>
+  for how to respond. Alternatively <code>{erqwest_response, Ref, error,
+  erqwest:err()}</code>.</p>
  
-  <p>* <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> or
-  <code>{erqwest_response, Ref, error, erqwest:err()}</code></p>
+  <p>* If <code>body</code> is omitted or is of type <code>iodata()</code>, <code>{erqwest_response, Ref,
+  reply, erqwest:resp()}</code> or <code>{erqwest_response, Ref, error, erqwest:err()}</code>.</p>
  
-  <p>* If <code>response_body</code> is <code>stream</code>, see <a docgen-rel="seemfa" docgen-href="#read/2" href="#read-2"><code>read/2</code></a></p>
+  <p>* If <code>response_body</code> is <code>stream</code>, <code>erqwest:resp()</code> will contain a handle
+  which should be passed to <a docgen-rel="seemfa" docgen-href="#read/2" href="#read-2"><code>read/2</code></a>. Alternatively, call <a docgen-rel="seemfa" docgen-href="#cancel/1" href="#cancel-1"><code>cancel/1</code></a> if you do not intend to consume the body.</p>
  
   <p>An <code>error</code> response is _always_ the final response. If streaming is not used,  
 a single reply is guaranteed.</p>
@@ -88,7 +91,7 @@ a single reply is guaranteed.</p>
   <code>{erqwest_response, Ref, next}</code> when the connection is ready to receive more
   data. Replies with <code>{erqwest_response, Ref, error, erqwest:err()}</code> if
   something goes wrong, or <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> if
-  the server has already decided to reply. Call <a docgen-rel="seeerl" docgen-href="finish_send" href="finish_send.html"><code>finish_send</code></a> when the
+  the server has already decided to reply. Call <a docgen-rel="seemfa" docgen-href="#finish_send/1" href="#finish_send-1"><code>finish_send/1</code></a> when the
   request body is complete.</p>
 <hr>
 
