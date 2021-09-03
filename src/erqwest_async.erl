@@ -13,17 +13,19 @@
 
 %% @doc Make an asynchronous request.
 %%
-%% Response(s) will be sent to `Pid' in the following order:
+%% A Response will be sent to `Pid' as follows:
 %%
 %% * If `body' is `stream', and the request was successfully initated,
 %% `{erqwest_response, Ref, next}'. See {@link send/2} and {@link finish_send/2}
-%% for how to respond. It is also possible to receive an `error' response as
-%% described below.
+%% for how to respond. Alternatively `{erqwest_response, Ref, error,
+%% erqwest:err()}'.
 %%
-%% * `{erqwest_response, Ref, reply, erqwest:resp()}' or
-%% `{erqwest_response, Ref, error, erqwest:err()}'
+%% * If `body' is omitted or is of type `iodata()', `{erqwest_response, Ref,
+%% reply, erqwest:resp()}' or `{erqwest_response, Ref, error, erqwest:err()}'.
 %%
-%% * If `response_body' is `stream', see {@link read/2}
+%% * If `response_body' is `stream', `erqwest:resp()' will contain a handle
+%% which should be passed to {@link read/2}. Alternatively, call {@link
+%% cancel/1} if you do not intend to consume the body.
 %%
 %% An `error' response is _always_ the final response. If streaming is not used,
 %% a single reply is guaranteed.
@@ -38,7 +40,7 @@ req(Client, Pid, Ref, Req) ->
 %% `{erqwest_response, Ref, next}' when the connection is ready to receive more
 %% data. Replies with `{erqwest_response, Ref, error, erqwest:err()}' if
 %% something goes wrong, or `{erqwest_response, Ref, reply, erqwest:resp()}' if
-%% the server has already decided to reply. Call {@link finish_send} when the
+%% the server has already decided to reply. Call {@link finish_send/1} when the
 %% request body is complete.
 -spec send(handle(), iodata()) -> ok.
 send(Handle, Data) ->
@@ -52,9 +54,11 @@ finish_send(Handle) ->
 
 %% @doc Read a chunk of the response body, waiting for at most `period' ms or
 %% until at least `length' bytes have been read. Note that more than `length'
-%% bytes can be returned. Replies with `{erqwest_response, Ref, chunk, Data}',
-%% `{erqwest_response, Ref, fin, Data}' or `{erqwest_response, Ref, error,
-%% erqwest:err()}`. A `fin' or `error' response will be the final message.
+%% bytes can be returned. `length' defaults to 8 MB if omitted, and `period' to
+%% `infinity'. Note that more than `length' bytes can be returned. Replies with
+%% `{erqwest_response, Ref, chunk, Data}', `{erqwest_response, Ref, fin, Data}'
+%% or `{erqwest_response, Ref, error, erqwest:err()}`. A `fin' or `error'
+%% response will be the final message.
 -spec read(handle(), erqwest:read_opts()) -> ok.
 read(Handle, Opts) ->
   erqwest_nif:read(Handle, Opts).

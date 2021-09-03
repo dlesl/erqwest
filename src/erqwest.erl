@@ -161,7 +161,7 @@ get_client(Client) ->
 %% finish_send/1} to stream the request body. If you set `response_body' to
 %% `stream', the `body' key in `resp()' be a `handle()' that you need to pass to
 %% `read' to consume the response body. If you decide not to consume the
-%% response body, call {@link discard_body/1}.
+%% response body, call {@link cancel/1}.
 -spec req(client() | atom(), req_opts()) ->
         {ok, resp()} | {handle, handle()} | {error, err()}.
 req(Client, #{body := stream}=Req) ->
@@ -220,9 +220,10 @@ read(Handle) ->
   read(Handle, #{}).
 
 %% @doc Read a chunk of the response body, waiting for at most `period' ms or
-%% until at least `length' bytes have been read. Note that more than `length'
-%% bytes can be returned. Returns `{more, binary()}' if there is more data to be
-%% read, and `{ok, binary()}' once the body is complete.
+%% until at least `length' bytes have been read. `length' defaults to 8 MB if
+%% omitted, and `period' to `infinity'. Note that more than `length' bytes can
+%% be returned. Returns `{more, binary()}' if there is more data to be read, and
+%% `{ok, binary()}' once the body is complete.
 -spec read(handle(), map() | cancel) ->
         {more, binary()} | {ok, binary()} | {error, err()}.
 read(#handle{inner=Inner, ref=Ref}=Handle, Opts) ->
