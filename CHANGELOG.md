@@ -2,7 +2,9 @@
 
 Only major and breaking changes are listed
 
-## Unreleased
+## 0.1.0 - 2021-09-03
+- Binary/iodata terms given as arguments to `req` are now copied and processed
+  on another thread to keep call times below 1 ms
 - Unrecognised options now raise an exception
 - Streaming request and response bodies
   - Breaking change: async message format
