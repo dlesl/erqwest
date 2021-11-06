@@ -18,7 +18,7 @@ use std::time::Duration;
 
 use crate::atoms;
 use crate::client::ClientResource;
-use crate::utils::{maybe_timeout, DecodeOrRaise};
+use crate::utils::maybe_timeout;
 
 const DEFAULT_READ_LENGTH: usize = 8 * 1024 * 1024;
 
@@ -603,11 +603,11 @@ fn req(
         if k == atoms::url() {
             url = Some(owned_env.save(v.decode::<Binary>()?.to_term(env)));
         } else if k == atoms::method() {
-            method = Some(v.decode_or_raise()?);
+            method = Some(v.decode()?);
         } else if k == atoms::headers() {
             let mut owned_headers = Vec::new();
-            for h in v.decode_or_raise::<ListIterator>()? {
-                let (hk, hv): (Binary, Binary) = h.decode_or_raise()?;
+            for h in v.decode::<ListIterator>()? {
+                let (hk, hv): (Binary, Binary) = h.decode()?;
                 owned_headers.push((
                     owned_env.save(hk.to_term(env)),
                     owned_env.save(hv.to_term(env)),
@@ -615,7 +615,7 @@ fn req(
             }
             headers = Some(owned_headers);
         } else if k == atoms::body() {
-            if v.decode_or_raise::<StreamBody>().is_ok() {
+            if v.decode::<StreamBody>().is_ok() {
                 let (tx, rx) = mpsc::channel::<Result<Vec<u8>, Infallible>>(0);
                 let (body_tx, body_rx0) = mpsc::unbounded();
                 body = Some(ReqBody::Stream(rx));
@@ -628,7 +628,7 @@ fn req(
                 ));
             }
         } else if k == atoms::response_body() {
-            match v.decode_or_raise()? {
+            match v.decode()? {
                 ResponseBody::Complete => (),
                 ResponseBody::Stream => {
                     let (tx, rx) = mpsc::unbounded();
@@ -752,9 +752,9 @@ fn read<'a>(
     let mut period = None;
     let mut length = DEFAULT_READ_LENGTH;
     for (k, v) in opts_or_cancel.decode::<MapIterator>()? {
-        let k: Atom = k.decode_or_raise()?;
+        let k: Atom = k.decode()?;
         if k == atoms::length() {
-            length = v.decode_or_raise()?;
+            length = v.decode()?;
         } else if k == atoms::period() {
             period = maybe_timeout(v)?;
         } else {

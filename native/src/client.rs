@@ -4,7 +4,7 @@ use reqwest::{Certificate, Identity};
 use rustler::{Atom, Encoder, Env, MapIterator, NifMap, NifResult, NifUnitEnum, ResourceArc, Term};
 use rustler::{Binary, ListIterator};
 
-use crate::utils::{maybe_timeout, DecodeOrRaise};
+use crate::utils::maybe_timeout;
 use crate::{atoms, runtime::RuntimeResource};
 
 #[derive(NifUnitEnum)]
@@ -44,18 +44,18 @@ fn make_client(
     }
     let mut builder = reqwest::ClientBuilder::new();
     for (k, v) in opts.decode::<MapIterator>()? {
-        let k: Atom = k.decode_or_raise()?;
+        let k: Atom = k.decode()?;
         if k == atoms::identity() {
-            let (pkcs12, pass): (Binary, String) = v.decode_or_raise()?;
+            let (pkcs12, pass): (Binary, String) = v.decode()?;
             builder = builder.identity(
                 Identity::from_pkcs12_der(pkcs12.as_slice(), &pass)
                     .map_err(|_| rustler::Error::BadArg)?,
             );
         } else if k == atoms::use_built_in_root_certs() {
-            builder = builder.tls_built_in_root_certs(v.decode_or_raise()?);
+            builder = builder.tls_built_in_root_certs(v.decode()?);
         } else if k == atoms::additional_root_certs() {
             for cert in v.decode::<ListIterator>()? {
-                let cert_bin: Binary = cert.decode_or_raise()?;
+                let cert_bin: Binary = cert.decode()?;
                 builder = builder.add_root_certificate(
                     Certificate::from_der(cert_bin.as_slice())
                         .map_err(|_| rustler::Error::BadArg)?,
@@ -72,9 +72,9 @@ fn make_client(
             }?;
             builder = builder.redirect(policy);
         } else if k == atoms::danger_accept_invalid_hostnames() {
-            builder = builder.danger_accept_invalid_hostnames(v.decode_or_raise()?);
+            builder = builder.danger_accept_invalid_hostnames(v.decode()?);
         } else if k == atoms::danger_accept_invalid_certs() {
-            builder = builder.danger_accept_invalid_certs(v.decode_or_raise()?);
+            builder = builder.danger_accept_invalid_certs(v.decode()?);
         } else if k == atoms::connect_timeout() {
             if let Some(timeout) = maybe_timeout(v)? {
                 builder = builder.connect_timeout(timeout);
@@ -86,13 +86,13 @@ fn make_client(
         } else if k == atoms::pool_idle_timeout() {
             builder = builder.pool_idle_timeout(maybe_timeout(v)?);
         } else if k == atoms::pool_max_idle_per_host() {
-            builder = builder.pool_max_idle_per_host(v.decode_or_raise()?);
+            builder = builder.pool_max_idle_per_host(v.decode()?);
         } else if k == atoms::https_only() {
-            builder = builder.https_only(v.decode_or_raise()?);
+            builder = builder.https_only(v.decode()?);
         } else if k == atoms::cookie_store() {
             #[cfg(feature = "cookies")]
             {
-                builder = builder.cookie_store(v.decode_or_raise()?);
+                builder = builder.cookie_store(v.decode()?);
             }
             #[cfg(not(feature = "cookies"))]
             {
@@ -101,7 +101,7 @@ fn make_client(
         } else if k == atoms::gzip() {
             #[cfg(feature = "gzip")]
             {
-                builder = builder.gzip(v.decode_or_raise()?);
+                builder = builder.gzip(v.decode()?);
             }
             #[cfg(not(feature = "gzip"))]
             {
@@ -115,9 +115,8 @@ fn make_client(
                 }
                 Err(_) => {
                     for proxy in v.decode::<ListIterator>()? {
-                        let (proxy_type, proxy_spec): (ProxyType, Term) =
-                            proxy.decode_or_raise()?;
-                        let ProxySpecBase { url } = proxy_spec.decode_or_raise()?;
+                        let (proxy_type, proxy_spec): (ProxyType, Term) = proxy.decode()?;
+                        let ProxySpecBase { url } = proxy_spec.decode()?;
                         let mut proxy = match proxy_type {
                             ProxyType::Http => reqwest::Proxy::http(url),
                             ProxyType::Https => reqwest::Proxy::https(url),
@@ -125,7 +124,7 @@ fn make_client(
                         }
                         .map_err(|_| rustler::Error::BadArg)?;
                         if let Ok(term) = proxy_spec.map_get(atoms::basic_auth().encode(env)) {
-                            let (username, password) = term.decode_or_raise()?;
+                            let (username, password) = term.decode()?;
                             proxy = proxy.basic_auth(username, password);
                         }
                         builder = builder.proxy(proxy);

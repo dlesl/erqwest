@@ -1,7 +1,5 @@
 use rustler::{nif, Env, NifResult, NifUnitEnum, Term};
 
-use crate::utils::DecodeOrRaise;
-
 mod client;
 mod req;
 mod runtime;
@@ -66,7 +64,7 @@ enum Feature {
 #[nif]
 fn feature(f: Term) -> NifResult<bool> {
     use Feature::*;
-    Ok(match f.decode_or_raise()? {
+    Ok(match f.decode()? {
         Cookies => cfg!(feature = "cookies"),
         Gzip => cfg!(feature = "gzip"),
     })
