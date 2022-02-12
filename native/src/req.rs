@@ -1,20 +1,21 @@
 use futures::channel::mpsc::{self, Receiver, Sender, UnboundedReceiver};
 use futures::future::{AbortHandle, Abortable, OptionFuture};
 use futures::{Future, SinkExt, StreamExt};
-use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use rustler::env::SavedTerm;
+use rustler::types::binary::NewBinary;
 use rustler::types::map;
-use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, OwnedBinary, Term};
+use rustler::{Atom, Binary, Encoder, Env, ListIterator, LocalPid, NifResult, Term};
 use rustler::{MapIterator, NifMap, NifUnitEnum, OwnedEnv, ResourceArc};
 use std::borrow::BorrowMut;
 use std::convert::Infallible;
-use std::io::Write;
 use std::pin::Pin;
-use std::str;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{self, ThreadId};
 use std::time::Duration;
+use std::{mem, str};
+use bytes::Bytes;
 
 use crate::atoms;
 use crate::client::ClientResource;
@@ -147,16 +148,22 @@ enum IsFin {
 /// Helper for storing/encoding an HTTP response
 struct Resp {
     status: u16,
-    headers: Vec<(String, OwnedBinary)>,
-    body: Option<OwnedBinary>,
+    headers: HeaderMap<HeaderValue>,
+    body: Option<Bytes>,
 }
 
 impl Resp {
     fn encode(self, env: Env) -> Term {
         let headers1: Vec<_> = self
             .headers
-            .into_iter()
-            .map(|(k, v)| (k, v.release(env)))
+            .iter()
+            .map(|(k, v)| {
+                let mut k1 = NewBinary::new(env, k.as_str().as_bytes().len());
+                k1.as_mut_slice().copy_from_slice(k.as_str().as_bytes());
+                let mut v1 = NewBinary::new(env, v.as_bytes().len());
+                v1.as_mut_slice().copy_from_slice(v.as_bytes());
+                (Term::from(k1), Term::from(v1))
+            })
             .collect();
         let mut map = map::map_new(env);
         map = map
@@ -165,10 +172,10 @@ impl Resp {
         map = map
             .map_put(atoms::headers().encode(env), headers1.encode(env))
             .unwrap();
-        if let Some(body) = self.body {
-            map = map
-                .map_put(atoms::body().encode(env), body.release(env).encode(env))
-                .unwrap();
+        if let Some(bytes) = self.body {
+            let mut body = NewBinary::new(env, bytes.len());
+            body.as_mut_slice().copy_from_slice(&bytes);
+            map = map.map_put(atoms::body().encode(env), body.into()).unwrap();
         }
         map.encode(env)
     }
@@ -278,7 +285,7 @@ impl Req {
         };
         let resp = builder.send();
         tokio::pin!(resp);
-        let res = if let Some((mut tx, rx)) = self.req_body_channels.take() {
+        let mut res = if let Some((mut tx, rx)) = self.req_body_channels.take() {
             match self.stream_req(&mut resp, &mut tx, rx).await {
                 Some(Ok(res)) => res,
                 Some(Err(e)) => {
@@ -310,12 +317,9 @@ impl Req {
             }
         };
         let status = res.status().as_u16();
-        let mut headers = Vec::with_capacity(res.headers().len());
-        for (k, v) in res.headers().iter() {
-            let mut v1 = OwnedBinary::new(v.as_bytes().len()).unwrap();
-            v1.as_mut_slice().write_all(v.as_bytes()).unwrap();
-            headers.push((k.as_str().into(), v1))
-        }
+        // "steal" the headers to avoid a copy
+        let mut headers = HeaderMap::new();
+        mem::swap(res.headers_mut(), &mut headers);
         if let Some(rx) = self.resp_stream_rx.take() {
             let partial_resp = Resp {
                 status,
@@ -326,12 +330,10 @@ impl Req {
         } else {
             match res.bytes().await {
                 Ok(bytes) => {
-                    let mut body = OwnedBinary::new(bytes.len()).unwrap();
-                    body.as_mut_slice().write_all(&bytes).unwrap();
                     let resp = Resp {
                         status,
                         headers,
-                        body: Some(body),
+                        body: Some(bytes),
                     };
                     self.reply_final(|env, ref_| {
                         (
@@ -450,18 +452,18 @@ impl Req {
                     // TODO: use stream instead of resp directly
                     match stream_response_chunk(&mut resp, opts, &mut buf).await {
                         Ok(res) => {
-                            let mut bin = OwnedBinary::new(buf.len()).unwrap();
-                            bin.as_mut_slice().write_all(&buf).unwrap();
                             match res {
                                 IsFin::NoFin => {
                                     env.run(|env| {
+                                        let mut bin = NewBinary::new(env, buf.len());
+                                        bin.as_mut_slice().copy_from_slice(&buf);
                                         env.send(
                                             &self.caller_pid,
                                             (
                                                 atoms::erqwest_response(),
                                                 &self.caller_ref.as_ref().unwrap(),
                                                 atoms::chunk(),
-                                                Binary::from_owned(bin, env),
+                                                Term::from(bin),
                                             )
                                                 .encode(env),
                                         )
@@ -473,11 +475,13 @@ impl Req {
                                     // sure that further calls to `read` fail
                                     drop(rx);
                                     self.reply_final(|env, ref_| {
+                                        let mut bin = NewBinary::new(env, buf.len());
+                                        bin.as_mut_slice().copy_from_slice(&buf);
                                         (
                                             atoms::erqwest_response(),
                                             ref_,
                                             atoms::fin(),
-                                            Binary::from_owned(bin, env),
+                                            Term::from(bin),
                                         )
                                             .encode(env)
                                     });
