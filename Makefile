@@ -18,6 +18,8 @@ docs:
 
 clean:
 	rebar3 clean
+	rm -rf docs
+	$(MAKE) -C native clean
 
 shell:
 	rebar3 compile
