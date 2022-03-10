@@ -1,101 +1,418 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Module erqwest_async</title>
-<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
-</head>
-<body bgcolor="white">
-<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<hr>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.27.3">
+    <meta name="project" content="erqwest v0.2.0">
 
-<h1>Module erqwest_async</h1>
-<ul class="index"><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+    <title>erqwest_async — erqwest v0.2.0</title>
+    <link rel="stylesheet" href="dist/erlang-b5092adf780908a19f62.css" />
 
+    <script src="dist/sidebar_items-cc2bf0bfcb.js"></script>
 
-<h2><a name="types">Data Types</a></h2>
+      <script src="docs_config.js"></script>
 
-<h3 class="typedecl"><a name="type-handle">handle()</a></h3>
-<p><b>abstract datatype</b>: <tt>handle()</tt></p>
+    <script async src="dist/app-38f5da25bdde1981e2f0.js"></script>
 
 
-<h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cancel-1">cancel/1</a></td><td>Cancel an asynchronous request at any stage.</td></tr>
-<tr><td valign="top"><a href="#finish_send-1">finish_send/1</a></td><td>Complete sending the request body.</td></tr>
-<tr><td valign="top"><a href="#read-2">read/2</a></td><td>Read a chunk of the response body, waiting for at most <code>period</code> ms or
-  until at least <code>length</code> bytes have been read.</td></tr>
-<tr><td valign="top"><a href="#req-4">req/4</a></td><td>Make an asynchronous request.</td></tr>
-<tr><td valign="top"><a href="#send-2">send/2</a></td><td>Asynchronously stream a chunk of the request body.</td></tr>
-</table>
+  </head>
+  <body data-type="modules">
+    <script>
 
-<h2><a name="functions">Function Details</a></h2>
+      try {
+        if (localStorage.getItem('night-mode') === 'true') {
+          document.body.classList.add('night-mode');
+        }
+      } catch (error) { }
+    </script>
 
-<h3 class="function"><a name="cancel-1">cancel/1</a></h3>
-<div class="spec">
-<p><tt>cancel(Handle::<a href="#type-handle">handle()</a>) -&gt; ok</tt><br></p>
-<p> </p>
-</div><p>Cancel an asynchronous request at any stage. A reply will always still
-  be sent, either <code>{error, #{code := cancelled}}</code>, another <code>error</code> or a <code>reply</code>
-  depending on the state of the connection. Has no effect if the request has
-  already completed or was already cancelled.</p>
+<div class="main">
 
-<h3 class="function"><a name="finish_send-1">finish_send/1</a></h3>
-<div class="spec">
-<p><tt>finish_send(Handle::<a href="#type-handle">handle()</a>) -&gt; ok</tt><br></p>
-<p> </p>
-</div><p>Complete sending the request body. The message flow continues as
-  described for <a docgen-rel="seemfa" docgen-href="#req/4" href="#req-4"><code>req/4</code></a>, ie. the next message will be <code>reply</code> or <code>error</code>.</p>
+<button class="sidebar-button sidebar-toggle">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
 
-<h3 class="function"><a name="read-2">read/2</a></h3>
-<div class="spec">
-<p><tt>read(Handle::<a href="#type-handle">handle()</a>, Opts::<a href="/home/runner/work/erqwest/erqwest/doc/erqwest.html#type-read_opts">erqwest:read_opts()</a>) -&gt; ok</tt><br></p>
-<p> </p>
-</div><p>Read a chunk of the response body, waiting for at most <code>period</code> ms or
-  until at least <code>length</code> bytes have been read. Note that more than <code>length</code>
-  bytes can be returned. <code>length</code> defaults to 8 MB if omitted, and <code>period</code> to
-  <code>infinity</code>. Note that more than <code>length</code> bytes can be returned. Replies with
-  <code>{erqwest_response, Ref, chunk, Data}</code>, <code>{erqwest_response, Ref, fin, Data}</code>
-  or <code>{erqwest_response, Ref, error, erqwest:err()}`. A `fin</code> or <code>error</code>
-  response will be the final message.</p>
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
 
-<h3 class="function"><a name="req-4">req/4</a></h3>
-<div class="spec">
-<p><tt>req(Client::<a href="/home/runner/work/erqwest/erqwest/doc/erqwest.html#type-client">erqwest:client()</a> | atom(), Pid::pid(), Ref::any(), Req::<a href="/home/runner/work/erqwest/erqwest/doc/erqwest.html#type-req_opts">erqwest:req_opts()</a>) -&gt; <a href="#type-handle">handle()</a></tt><br></p>
-<p> </p>
-</div><p><p>Make an asynchronous request.</p>
- 
-  <p>A Response will be sent to <code>Pid</code> as follows:</p>
- 
-  <p>* If <code>body</code> is <code>stream</code>, and the request was successfully initated,
-  <code>{erqwest_response, Ref, next}</code>. See <a docgen-rel="seemfa" docgen-href="#send/2" href="#send-2"><code>send/2</code></a> and <a docgen-rel="seemfa" docgen-href="#finish_send/2" href="#finish_send-2"><code>finish_send/2</code></a>
-  for how to respond. Alternatively <code>{erqwest_response, Ref, error,
-  erqwest:err()}</code>.</p>
- 
-  <p>* If <code>body</code> is omitted or is of type <code>iodata()</code>, <code>{erqwest_response, Ref,
-  reply, erqwest:resp()}</code> or <code>{erqwest_response, Ref, error, erqwest:err()}</code>.</p>
- 
-  <p>* If <code>response_body</code> is <code>stream</code>, <code>erqwest:resp()</code> will contain a handle
-  which should be passed to <a docgen-rel="seemfa" docgen-href="#read/2" href="#read-2"><code>read/2</code></a>. Alternatively, call <a docgen-rel="seemfa" docgen-href="#cancel/1" href="#cancel-1"><code>cancel/1</code></a> if you do not intend to consume the body.</p>
- 
-  <p>An <code>error</code> response is _always_ the final response. If streaming is not used,  
-a single reply is guaranteed.</p>
- 
-  Fails with reason badarg if any argument is invalid or if the client has
-  already been closed.</p>
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
 
-<h3 class="function"><a name="send-2">send/2</a></h3>
-<div class="spec">
-<p><tt>send(Handle::<a href="#type-handle">handle()</a>, Data::iodata()) -&gt; ok</tt><br></p>
-<p> </p>
-</div><p>Asynchronously stream a chunk of the request body. Replies with
-  <code>{erqwest_response, Ref, next}</code> when the connection is ready to receive more
-  data. Replies with <code>{erqwest_response, Ref, error, erqwest:err()}</code> if
-  something goes wrong, or <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> if
-  the server has already decided to reply. Call <a docgen-rel="seemfa" docgen-href="#finish_send/1" href="#finish_send-1"><code>finish_send/1</code></a> when the
-  request body is complete.</p>
-<hr>
+  <div class="sidebar-header">
 
-<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc</i></p>
-</body>
+    <div class="sidebar-projectDetails">
+      <a href="readme.html" class="sidebar-projectName" translate="no">
+erqwest
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v0.2.0
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
+  </div>
+
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+    <a href="https://github.com/dlesl/erqwest/blob/v0.2.0/src/erqwest_async.erl#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">erqwest_async</span> 
+  <small class="app-vsn" translate="no">(erqwest v0.2.0)</small>
+
+</h1>
+
+
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
+
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#t:handle/0" translate="no">handle/0</a>
+
+        </div>
+
+      </div>
+
+  </div>
+
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#cancel/1" translate="no">cancel(Handle)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Cancel an asynchronous request at any stage. A reply will always still be sent, either <code>{error, #{code := cancelled}}</code>, another <code>error</code> or a <code>reply</code> depending on the state of the connection. Has no effect if the request has already completed or was already cancelled.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#finish_send/1" translate="no">finish_send(Handle)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Complete sending the request body. The message flow continues as described for <a href="#req/4"><code>req/4</code></a>, ie. the next message will be <code>reply</code> or <code>error</code>.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#read/2" translate="no">read(Handle, Opts)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Read a chunk of the response body, waiting for at most <code>period</code> ms or until at least <code>length</code> bytes have been read. Note that more than <code>length</code> bytes can be returned. <code>length</code> defaults to 8 MB if omitted, and <code>period</code> to <code>infinity</code>. Note that more than <code>length</code> bytes can be returned. Replies with <code>{erqwest_response, Ref, chunk, Data}</code>, <code>{erqwest_response, Ref, fin, Data}</code> or <code>{erqwest_response, Ref, error, erqwest:err()}`. A `fin</code> or <code>error</code> response will be the final message.</div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#req/4" translate="no">req(Client, Pid, Ref, Req)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Make an asynchronous request.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#send/2" translate="no">send(Handle, Data)</a>
+
+        </div>
+
+          <div class="summary-synopsis">Asynchronously stream a chunk of the request body. Replies with <code>{erqwest_response, Ref, next}</code> when the connection is ready to receive more data. Replies with <code>{erqwest_response, Ref, error, erqwest:err()}</code> if something goes wrong, or <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> if the server has already decided to reply. Call <a href="#finish_send/1"><code>finish_send/1</code></a> when the request body is complete.</div>
+
+      </div>
+
+  </div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Types
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:handle/0">
+
+  <div class="detail-header">
+    <a href="#t:handle/0" class="detail-link" title="Link to this opaque">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this opaque</span>
+    </a>
+    <h1 class="signature" translate="no">handle/0</h1>
+
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.0/src/erqwest_async.erl#L12" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+      <span class="note">(opaque)</span>
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre translate="no">handle()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+Functions
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="cancel/1">
+
+  <div class="detail-header">
+    <a href="#cancel/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">cancel(Handle)</h1>
+
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.0/src/erqwest_async.erl#L71" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre translate="no">cancel(<a href="#t:handle/0">handle</a>()) -> ok.</pre>
+
+      </div>
+
+Cancel an asynchronous request at any stage. A reply will always still be sent, either <code>{error, #{code := cancelled}}</code>, another <code>error</code> or a <code>reply</code> depending on the state of the connection. Has no effect if the request has already completed or was already cancelled.
+  </section>
+</section>
+<section class="detail" id="finish_send/1">
+
+  <div class="detail-header">
+    <a href="#finish_send/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">finish_send(Handle)</h1>
+
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.0/src/erqwest_async.erl#L52" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre translate="no">finish_send(<a href="#t:handle/0">handle</a>()) -> ok.</pre>
+
+      </div>
+
+Complete sending the request body. The message flow continues as described for <a href="#req/4"><code>req/4</code></a>, ie. the next message will be <code>reply</code> or <code>error</code>.
+  </section>
+</section>
+<section class="detail" id="read/2">
+
+  <div class="detail-header">
+    <a href="#read/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">read(Handle, Opts)</h1>
+
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.0/src/erqwest_async.erl#L63" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre translate="no">read(<a href="#t:handle/0">handle</a>(), <a href="erqwest.html#t:read_opts/0">erqwest:read_opts</a>()) -> ok.</pre>
+
+      </div>
+
+Read a chunk of the response body, waiting for at most <code>period</code> ms or until at least <code>length</code> bytes have been read. Note that more than <code>length</code> bytes can be returned. <code>length</code> defaults to 8 MB if omitted, and <code>period</code> to <code>infinity</code>. Note that more than <code>length</code> bytes can be returned. Replies with <code>{erqwest_response, Ref, chunk, Data}</code>, <code>{erqwest_response, Ref, fin, Data}</code> or <code>{erqwest_response, Ref, error, erqwest:err()}`. A `fin</code> or <code>error</code> response will be the final message.
+  </section>
+</section>
+<section class="detail" id="req/4">
+
+  <div class="detail-header">
+    <a href="#req/4" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">req(Client, Pid, Ref, Req)</h1>
+
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.0/src/erqwest_async.erl#L36" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre translate="no">req(<a href="erqwest.html#t:client/0">erqwest:client</a>() | atom(), pid(), any(), <a href="erqwest.html#t:req_opts/0">erqwest:req_opts</a>()) -> <a href="#t:handle/0">handle</a>().</pre>
+
+      </div>
+
+<p>Make an asynchronous request.</p><p>A Response will be sent to <code>Pid</code> as follows:</p><p>* If <code>body</code> is <code>stream</code>, and the request was successfully initated, <code>{erqwest_response, Ref, next}</code>. See <a href="#send/2"><code>send/2</code></a> and <a href="#finish_send/1"><code>finish_send/1</code></a> for how to respond. Alternatively <code>{erqwest_response, Ref, error, erqwest:err()}</code>.</p><p>* If <code>body</code> is omitted or is of type <code>iodata()</code>, <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> or <code>{erqwest_response, Ref, error, erqwest:err()}</code>.</p><p>* If <code>response_body</code> is <code>stream</code>, <code>erqwest:resp()</code> will contain a handle which should be passed to <a href="#read/2"><code>read/2</code></a>. Alternatively, call <a href="#cancel/1"><code>cancel/1</code></a> if you do not intend to consume the body.</p><p>An <code>error</code> response is _always_ the final response. If streaming is not used, a single reply is guaranteed.</p>Fails with reason badarg if any argument is invalid or if the client has already been closed.
+  </section>
+</section>
+<section class="detail" id="send/2">
+
+  <div class="detail-header">
+    <a href="#send/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">send(Handle, Data)</h1>
+
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.0/src/erqwest_async.erl#L46" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre translate="no">send(<a href="#t:handle/0">handle</a>(), iodata()) -> ok.</pre>
+
+      </div>
+
+Asynchronously stream a chunk of the request body. Replies with <code>{erqwest_response, Ref, next}</code> when the connection is ready to receive more data. Replies with <code>{erqwest_response, Ref, error, erqwest:err()}</code> if something goes wrong, or <code>{erqwest_response, Ref, reply, erqwest:resp()}</code> if the server has already decided to reply. Call <a href="#finish_send/1"><code>finish_send/1</code></a> when the request body is complete.
+  </section>
+</section>
+
+    </div>
+  </section>
+
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/erqwest/0.2.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/erqwest/0.2.0" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/erqwest/0.2.0/show/src/erqwest_async.erl">(current file)</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.27.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
+  </body>
 </html>

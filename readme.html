@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.27.3">
+    <meta name="project" content="erqwest v0.2.0">
+
+    <title>erqwest — erqwest v0.2.0</title>
+    <link rel="stylesheet" href="dist/erlang-b5092adf780908a19f62.css" />
+
+    <script src="dist/sidebar_items-cc2bf0bfcb.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/app-38f5da25bdde1981e2f0.js"></script>
+
+
+  </head>
+  <body data-type="extras">
+    <script>
+
+      try {
+        if (localStorage.getItem('night-mode') === 'true') {
+          document.body.classList.add('night-mode');
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="readme.html" class="sidebar-projectName" translate="no">
+erqwest
+      </a>
+      <strong class="sidebar-projectVersion" translate="no">
+        v0.2.0
+      </strong>
+    </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
+  </div>
+
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+    <a href="https://github.com/dlesl/erqwest/blob/v0.2.0/README.md#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span>erqwest</span>
+</h1>
+
+<p><a href="https://hex.pm/packages/erqwest"><img src="http://img.shields.io/hexpm/v/erqwest.svg?style=flat" alt="Hex pm"/></a></p><p>An erlang wrapper for <a href="https://github.com/seanmonstar/reqwest">reqwest</a> using
+<a href="https://github.com/rusterlium/rustler">rustler</a>. Map-based interface inspired
+by <a href="https://github.com/puzza007/katipo">katipo</a>.</p><h2 id="features" class="section-heading">
+  <a href="#features" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a>
+  Features
+</h2>
+<ul><li>HTTP/1.1 and HTTP/2 with connection keepalive/reuse</li><li>Configurable SSL support, uses system root certificates by default</li><li>Sync and async interfaces</li><li>Proxy support</li><li>Optional cookies support</li><li>Optional gzip support</li></ul><h2 id="prerequisites" class="section-heading">
+  <a href="#prerequisites" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a>
+  Prerequisites
+</h2>
+<ul><li>Erlang/OTP</li><li>Rust</li><li>OpenSSL (not required on mac)</li></ul><p>Or use the provided <code class="inline">shell.nix</code> if you have nix installed.</p><h2 id="usage" class="section-heading">
+  <a href="#usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a>
+  Usage
+</h2>
+<h3 id="start-a-client" class="section-heading">
+  <a href="#start-a-client" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a>
+  Start a client
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">application</span><span class="p">:</span><span class="nf">ensure_started</span><span class="p" data-group-id="1085130624-1">(</span><span class="ss">erqwest</span><span class="p" data-group-id="1085130624-1">)</span><span class="p">,</span><span class="w">
+</span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">start_client</span><span class="p" data-group-id="1085130624-2">(</span><span class="ss">default</span><span class="p" data-group-id="1085130624-2">)</span><span class="p">.</span></code></pre><p>This registers a client under the name <code class="inline">default</code>. The client maintains an
+internal connection pool. </p><h3 id="synchronous-interface" class="section-heading">
+  <a href="#synchronous-interface" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a>
+  Synchronous interface
+</h3>
+<h4>No streaming</h4><pre><code class="makeup erlang" translate="no"><span class="w"> </span><span class="p" data-group-id="1164909473-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1164909473-2">#{</span><span class="ss">status</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Body</span><span class="p" data-group-id="1164909473-2">}</span><span class="p" data-group-id="1164909473-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
+     </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">get</span><span class="p" data-group-id="1164909473-3">(</span><span class="ss">default</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;https://httpbin.org/get&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="1164909473-3">)</span><span class="p">,</span><span class="w">
+
+ </span><span class="p" data-group-id="1164909473-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1164909473-5">#{</span><span class="ss">status</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Body1</span><span class="p" data-group-id="1164909473-5">}</span><span class="p" data-group-id="1164909473-4">}</span><span class="w"> </span><span class="o">=</span><span class="w">
+     </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">post</span><span class="p" data-group-id="1164909473-6">(</span><span class="ss">default</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;https://httpbin.org/post&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
+                  </span><span class="p" data-group-id="1164909473-7">#{</span><span class="ss">body</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;data&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="1164909473-7">}</span><span class="p" data-group-id="1164909473-6">)</span><span class="p">.</span></code></pre><h4>Stream request body</h4><pre><code class="makeup erlang" translate="no"><span class="w"> </span><span class="p" data-group-id="0336842525-1">{</span><span class="ss">handle</span><span class="p">,</span><span class="w"> </span><span class="n">H</span><span class="p" data-group-id="0336842525-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">post</span><span class="p" data-group-id="0336842525-2">(</span><span class="ss">default</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;https://httpbin.org/post&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
+                            </span><span class="p" data-group-id="0336842525-3">#{</span><span class="ss">body</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">stream</span><span class="p" data-group-id="0336842525-3">}</span><span class="p" data-group-id="0336842525-2">)</span><span class="p">,</span><span class="w">
+ </span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">send</span><span class="p" data-group-id="0336842525-4">(</span><span class="n">H</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;data, &quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0336842525-4">)</span><span class="p">,</span><span class="w">
+ </span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">send</span><span class="p" data-group-id="0336842525-5">(</span><span class="n">H</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;more data.&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0336842525-5">)</span><span class="p">,</span><span class="w">
+ </span><span class="p" data-group-id="0336842525-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0336842525-7">#{</span><span class="ss">body</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Body</span><span class="p" data-group-id="0336842525-7">}</span><span class="p" data-group-id="0336842525-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">finish_send</span><span class="p" data-group-id="0336842525-8">(</span><span class="n">H</span><span class="p" data-group-id="0336842525-8">)</span><span class="p">.</span></code></pre><h4>Stream response body</h4><pre><code class="makeup erlang" translate="no"><span class="w"> </span><span class="p" data-group-id="4720813374-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4720813374-2">#{</span><span class="ss">body</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Handle</span><span class="p" data-group-id="4720813374-2">}</span><span class="p" data-group-id="4720813374-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">get</span><span class="p" data-group-id="4720813374-3">(</span><span class="ss">default</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;https://httpbin.org/stream-bytes/1000&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
+                                       </span><span class="p" data-group-id="4720813374-4">#{</span><span class="ss">response_body</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">stream</span><span class="p" data-group-id="4720813374-4">}</span><span class="p" data-group-id="4720813374-3">)</span><span class="p">,</span><span class="w">
+ </span><span class="n">ReadAll</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">fun</span><span class="w"> </span><span class="n">Self</span><span class="p" data-group-id="4720813374-5">(</span><span class="p" data-group-id="4720813374-5">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+               </span><span class="k">case</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">read</span><span class="p" data-group-id="4720813374-6">(</span><span class="n">Handle</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4720813374-7">#{</span><span class="nb">length</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="4720813374-7">}</span><span class="p" data-group-id="4720813374-6">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+                 </span><span class="p" data-group-id="4720813374-8">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Data</span><span class="p" data-group-id="4720813374-8">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+                   </span><span class="p" data-group-id="4720813374-9">[</span><span class="n">Data</span><span class="p" data-group-id="4720813374-9">]</span><span class="p">;</span><span class="w">
+                 </span><span class="p" data-group-id="4720813374-10">{</span><span class="ss">more</span><span class="p">,</span><span class="w"> </span><span class="n">Data</span><span class="p" data-group-id="4720813374-10">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+                   </span><span class="p" data-group-id="4720813374-11">[</span><span class="n">Data</span><span class="p">|</span><span class="n">Self</span><span class="p" data-group-id="4720813374-12">(</span><span class="p" data-group-id="4720813374-12">)</span><span class="p" data-group-id="4720813374-11">]</span><span class="w">
+               </span><span class="k">end</span><span class="w">
+           </span><span class="k">end</span><span class="p">,</span><span class="w">
+ </span><span class="mi">1000</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">iolist_size</span><span class="p" data-group-id="4720813374-13">(</span><span class="n">ReadAll</span><span class="p" data-group-id="4720813374-14">(</span><span class="p" data-group-id="4720813374-14">)</span><span class="p" data-group-id="4720813374-13">)</span><span class="p">.</span></code></pre><h4>Conditionally consume response body</h4><pre><code class="makeup erlang" translate="no"><span class="w"> </span><span class="p" data-group-id="3919851381-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Resp</span><span class="p" data-group-id="3919851381-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">get</span><span class="p" data-group-id="3919851381-2">(</span><span class="ss">default</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;https://httpbin.org/status/200,500&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
+                          </span><span class="p" data-group-id="3919851381-3">#{</span><span class="ss">response_body</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">stream</span><span class="p" data-group-id="3919851381-3">}</span><span class="p" data-group-id="3919851381-2">)</span><span class="p">,</span><span class="w">
+ </span><span class="k">case</span><span class="w"> </span><span class="n">Resp</span><span class="w"> </span><span class="k">of</span><span class="w">
+   </span><span class="p" data-group-id="3919851381-4">#{</span><span class="ss">status</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Handle</span><span class="p" data-group-id="3919851381-4">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+     </span><span class="p" data-group-id="3919851381-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="3919851381-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">read</span><span class="p" data-group-id="3919851381-6">(</span><span class="n">Handle</span><span class="p" data-group-id="3919851381-6">)</span><span class="p">,</span><span class="w">
+   </span><span class="p" data-group-id="3919851381-7">#{</span><span class="ss">status</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">BadStatus</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Handle</span><span class="p" data-group-id="3919851381-7">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+     </span><span class="c1">%% ensures the connection is closed/can be reused immediately</span><span class="w">
+     </span><span class="nc">erqwest</span><span class="p">:</span><span class="nf">cancel</span><span class="p" data-group-id="3919851381-8">(</span><span class="n">Handle</span><span class="p" data-group-id="3919851381-8">)</span><span class="p">,</span><span class="w">
+     </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="3919851381-9">(</span><span class="s">&quot;Status is </span><span class="si">~p</span><span class="s">, not interested</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3919851381-10">[</span><span class="n">BadStatus</span><span class="p" data-group-id="3919851381-10">]</span><span class="p" data-group-id="3919851381-9">)</span><span class="w">
+ </span><span class="k">end</span><span class="p">.</span></code></pre><h3 id="asynchronous-interface" class="section-heading">
+  <a href="#asynchronous-interface" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a>
+  Asynchronous interface
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="nc">erqwest_async</span><span class="p">:</span><span class="nf">req</span><span class="p" data-group-id="4724828055-1">(</span><span class="ss">default</span><span class="p">,</span><span class="w"> </span><span class="nf">self</span><span class="p" data-group-id="4724828055-2">(</span><span class="p" data-group-id="4724828055-2">)</span><span class="p">,</span><span class="w"> </span><span class="n">Ref</span><span class="o">=</span><span class="nf">make_ref</span><span class="p" data-group-id="4724828055-3">(</span><span class="p" data-group-id="4724828055-3">)</span><span class="p">,</span><span class="w"> 
+                  </span><span class="p" data-group-id="4724828055-4">#{</span><span class="ss">method</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nb">get</span><span class="p">,</span><span class="w"> </span><span class="ss">url</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;https://httpbin.org/get&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="4724828055-4">}</span><span class="p" data-group-id="4724828055-1">)</span><span class="p">,</span><span class="w">
+</span><span class="k">receive</span><span class="w">
+    </span><span class="p" data-group-id="4724828055-5">{</span><span class="ss">erqwest_response</span><span class="p">,</span><span class="w"> </span><span class="n">Ref</span><span class="p">,</span><span class="w"> </span><span class="ss">reply</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4724828055-6">#{</span><span class="ss">body</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Body</span><span class="p" data-group-id="4724828055-6">}</span><span class="p" data-group-id="4724828055-5">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">Body</span><span class="w">
+</span><span class="k">end</span><span class="p">.</span></code></pre><p>See the <a href="https://hexdocs.pm/erqwest/">docs</a> for more details and and the
+<a href="https://github.com/dlesl/erqwest/tree/master/test/erqwest_SUITE.erl">test suite</a> 
+for more examples.</p><h2 id="docs" class="section-heading">
+  <a href="#docs" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a>
+  <a href="https://hexdocs.pm/erqwest/">Docs</a>
+</h2>
+<h2 id="benchmarks" class="section-heading">
+  <a href="#benchmarks" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a>
+  <a href="https://github.com/dlesl/erqwest/tree/master/bench">Benchmarks</a>
+</h2>
+
+<div class="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="api-reference.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+API Reference
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="license.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+LICENSE
+        </span>
+      </a>
+
+  </div>
+</div>
+
+      <footer class="footer">
+
+          <p>
+            On Hex.pm:
+
+            <span class="line">
+              <a href="https://hex.pm/packages/erqwest/0.2.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/erqwest/0.2.0" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/erqwest/0.2.0/show/README.md">(current file)</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.27.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
+  </body>
+</html>
