@@ -16,7 +16,7 @@
 %% A Response will be sent to `Pid' as follows:
 %%
 %% * If `body' is `stream', and the request was successfully initated,
-%% `{erqwest_response, Ref, next}'. See {@link send/2} and {@link finish_send/2}
+%% `{erqwest_response, Ref, next}'. See {@link send/2} and {@link finish_send/1}
 %% for how to respond. Alternatively `{erqwest_response, Ref, error,
 %% erqwest:err()}'.
 %%

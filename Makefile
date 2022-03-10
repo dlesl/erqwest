@@ -14,7 +14,7 @@ dialyzer:
 	CARGO_PROFILE=debug rebar3 as test dialyzer
 
 docs:
-	CARGO_PROFILE=debug rebar3 edoc
+	CARGO_PROFILE=debug rebar3 ex_doc
 
 clean:
 	rebar3 clean

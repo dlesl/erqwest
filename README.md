@@ -2,16 +2,11 @@
 erqwest
 =======
 
-An experimental erlang wrapper for
-[reqwest](https://github.com/seanmonstar/reqwest) using
+[![Hex pm](http://img.shields.io/hexpm/v/erqwest.svg?style=flat)](https://hex.pm/packages/erqwest)
+
+An erlang wrapper for [reqwest](https://github.com/seanmonstar/reqwest) using
 [rustler](https://github.com/rusterlium/rustler). Map-based interface inspired
 by [katipo](https://github.com/puzza007/katipo).
-
-How it works
-------------
-
-HTTP requests are performed asynchronously on a [tokio](https://tokio.rs/)
-`Runtime` and the responses returned as an erlang message.
 
 Features
 --------
@@ -28,7 +23,7 @@ Prerequisites
 
 * Erlang/OTP
 * Rust
-* Openssl (not required on mac)
+* OpenSSL (not required on mac)
 
 Or use the provided `shell.nix` if you have nix installed.
 
@@ -110,11 +105,12 @@ receive
 end.
 ```
 
-See the [docs](https://dlesl.github.io/erqwest/) for more details and and the
-[test suite](test/erqwest_SUITE.erl) for more examples.
+See the [docs](https://hexdocs.pm/erqwest/) for more details and and the
+[test suite](https://github.com/dlesl/erqwest/tree/master/test/erqwest_SUITE.erl) 
+for more examples.
 
-[Docs](https://dlesl.github.io/erqwest/)
+[Docs](https://hexdocs.pm/erqwest/)
 ----
 
-[Benchmarks](bench)
+[Benchmarks](https://github.com/dlesl/erqwest/tree/master/bench)
 -------------------
