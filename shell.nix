@@ -7,12 +7,13 @@ pkgs.mkShell {
       rust-analyzer
       rustc
       rustfmt
-      erlang-ls
       openssl
       pkgconfig
-      erlang
-      rebar3
-    ] ++ lib.optionals (!stdenv.isDarwin) [ tinyproxy ]
+    ] ++ (with beam.packages.erlangR25;
+      [
+        erlang
+        rebar3
+      ]) ++ lib.optionals (!stdenv.isDarwin) [ tinyproxy ]
       ++ lib.optionals stdenv.isDarwin [
         libiconv
         darwin.apple_sdk.frameworks.Security
