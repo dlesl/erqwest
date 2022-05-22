@@ -7,10 +7,14 @@ dist/html/fonts/remixicon.svg
 dist/html/fonts/remixicon.ttf
 dist/html/fonts/remixicon.woff
 dist/html/fonts/remixicon.woff2
-dist/search_items-5952ab98ac.js
-dist/sidebar_items-cc2bf0bfcb.js
+dist/search_items-0d32e0ccac.js
+dist/sidebar_items-3da0798377.js
 erqwest.html
+erqwest_app.html
 erqwest_async.html
+erqwest_nif.html
+erqwest_runtime.html
+erqwest_sup.html
 index.html
 license.html
 readme.html
