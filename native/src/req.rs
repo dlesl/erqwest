@@ -175,7 +175,7 @@ impl Resp {
         if let Some(bytes) = self.body {
             let mut body = NewBinary::new(env, bytes.len());
             body.as_mut_slice().copy_from_slice(&bytes);
-            map = map.map_put(atoms::body().encode(env), body.into()).unwrap();
+            map = map.map_put(atoms::body().encode(env), Term::from(body)).unwrap();
         }
         map.encode(env)
     }
