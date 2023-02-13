@@ -4,33 +4,41 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.27.3">
-    <meta name="project" content="erqwest v0.2.2">
+    <meta name="generator" content="ExDoc v0.29.1">
+    <meta name="project" content="erqwest v0.2.3">
 
-    <title>erqwest — erqwest v0.2.2</title>
-    <link rel="stylesheet" href="dist/erlang-b5092adf780908a19f62.css" />
+    <title>erqwest — erqwest v0.2.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-6FXMBT73.css" />
 
-    <script src="dist/sidebar_items-3da0798377.js"></script>
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-IV5W3OL2.js"></script>
+    <script src="dist/sidebar_items-5A36A892.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-38f5da25bdde1981e2f0.js"></script>
+    <script async src="dist/html-XN2TSG4M.js"></script>
 
 
   </head>
-  <body data-type="modules">
+  <body data-type="modules" class="page-module">
     <script>
 
       try {
-        if (localStorage.getItem('night-mode') === 'true') {
-          document.body.classList.add('night-mode');
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
         }
       } catch (error) { }
     </script>
 
 <div class="main">
 
-<button class="sidebar-button sidebar-toggle">
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
   <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
 </button>
 
@@ -43,7 +51,8 @@
       <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
     </button>
     <label class="search-label">
-      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+      <p class="sr-only">Search</p>
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
     </label>
   </form>
 
@@ -59,7 +68,7 @@
 erqwest
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v0.2.2
+        v0.2.3
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -76,23 +85,24 @@ erqwest
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
 <h1>
-<button class="settings display-settings">
+<button class="icon-action display-settings">
   <i class="ri-settings-3-line"></i>
   <span class="sr-only">Settings</span>
 </button>
 
 
-    <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L1" title="View Source" class="view-source" rel="help">
+    <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L1" title="View Source" class="icon-action" rel="help">
       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
       <span class="sr-only">View Source</span>
     </a>
 
   <span translate="no">erqwest</span> 
-  <small class="app-vsn" translate="no">(erqwest v0.2.2)</small>
+  <small class="app-vsn" translate="no">(erqwest v0.2.3)</small>
 
 </h1>
 
@@ -106,330 +116,320 @@ erqwest
       </a>
       Summary
     </h1>
+<div class="summary-types summary">
+  <h2>
+    <a href="#types">Types</a>
+  </h2>
 
-  <div class="summary-types summary">
-    <h2>
-      <a href="#types">Types</a>
-    </h2>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:client/0" translate="no">client/0</a>
-
-        </div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:client/0" translate="no">client/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:client_opts/0" translate="no">client_opts/0</a>
+    </div>
 
-        </div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:err/0" translate="no">err/0</a>
-
-        </div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:client_opts/0" translate="no">client_opts/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:feature/0" translate="no">feature/0</a>
+    </div>
 
-        </div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:handle/0" translate="no">handle/0</a>
-
-        </div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:err/0" translate="no">err/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:header/0" translate="no">header/0</a>
+    </div>
 
-        </div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:method/0" translate="no">method/0</a>
-
-        </div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:feature/0" translate="no">feature/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:proxy_config/0" translate="no">proxy_config/0</a>
+    </div>
 
-        </div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:proxy_spec/0" translate="no">proxy_spec/0</a>
-
-        </div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:handle/0" translate="no">handle/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:read_opts/0" translate="no">read_opts/0</a>
+    </div>
 
-        </div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:req_opts/0" translate="no">req_opts/0</a>
-
-        </div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:header/0" translate="no">header/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:req_opts_optional/0" translate="no">req_opts_optional/0</a>
+    </div>
 
-        </div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:resp/0" translate="no">resp/0</a>
-
-        </div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:method/0" translate="no">method/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#t:timeout_ms/0" translate="no">timeout_ms/0</a>
+    </div>
 
-        </div>
-
-      </div>
-
-  </div>
-
-  <div class="summary-functions summary">
-    <h2>
-      <a href="#functions">Functions</a>
-    </h2>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#cancel/1" translate="no">cancel(Handle)</a>
-
-        </div>
-
-          <div class="summary-synopsis">Used to cancel streaming of a request or response body.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:proxy_config/0" translate="no">proxy_config/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#close_client/1" translate="no">close_client(Client)</a>
+    </div>
 
-        </div>
-
-          <div class="summary-synopsis"><p>Close a client and idle connections in its pool. Returns immediately, but the connection pool will not be cleaned up until all in-flight requests for this client have returned.</p></div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:proxy_spec/0" translate="no">proxy_spec/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#delete/3" translate="no">delete(Client, Url, Opts)</a>
+    </div>
 
-        </div>
-
-          <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:read_opts/0" translate="no">read_opts/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#feature/1" translate="no">feature(Feature)</a>
+    </div>
 
-        </div>
-
-          <div class="summary-synopsis">Determines whether a compile-time feature is available. Enable features by adding them to the environment variable <code>ERQWEST_FEATURES</code> (comma separated list) at build time.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:req_opts/0" translate="no">req_opts/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#finish_send/1" translate="no">finish_send(Handle)</a>
+    </div>
 
-        </div>
-
-          <div class="summary-synopsis">Complete sending the request body. Awaits the server's reply. Return values are as described for <a href="#req/2"><code>req/2</code></a>.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:req_opts_optional/0" translate="no">req_opts_optional/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#get/2" translate="no">get(Client, Url)</a>
+    </div>
 
-        </div>
-
-          <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:resp/0" translate="no">resp/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#get/3" translate="no">get(Client, Url, Opts)</a>
+    </div>
 
-        </div>
-
-          <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:timeout_ms/0" translate="no">timeout_ms/0</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#get_client/1" translate="no">get_client(Client)</a>
+    </div>
 
-        </div>
+</div>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
 
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#make_client/0" translate="no">make_client()</a>
-
-        </div>
-
-          <div class="summary-synopsis"><p>Equivalent to <a href="#make_client/1">make_client(#{})</a>.</p></div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cancel/1" translate="no">cancel(Handle)</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#make_client/1" translate="no">make_client(Opts)</a>
+        <div class="summary-synopsis">Used to cancel streaming of a request or response body.</div>
 
-        </div>
+    </div>
 
-          <div class="summary-synopsis">Make a new client with its own connection pool. See also <a href="#start_client/2"><code>start_client/2</code></a>.</div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#patch/3" translate="no">patch(Client, Url, Opts)</a>
-
-        </div>
-
-          <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#close_client/1" translate="no">close_client(Client)</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#post/3" translate="no">post(Client, Url, Opts)</a>
+        <div class="summary-synopsis"><p>Close a client and idle connections in its pool. Returns immediately, but the connection pool will not be cleaned up until all in-flight requests for this client have returned.</p></div>
 
-        </div>
+    </div>
 
-          <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#put/3" translate="no">put(Client, Url, Opts)</a>
-
-        </div>
-
-          <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#delete/3" translate="no">delete(Client, Url, Opts)</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#read/1" translate="no">read(Handle)</a>
+        <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
 
-        </div>
+    </div>
 
-          <div class="summary-synopsis"><p>Equivalent to <a href="#read/2">read(Handle, #{})</a>.</p></div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#read/2" translate="no">read(Handle, Opts)</a>
-
-        </div>
-
-          <div class="summary-synopsis">Read a chunk of the response body, waiting for at most <code>period</code> ms or until at least <code>length</code> bytes have been read. <code>length</code> defaults to 8 MB if omitted, and <code>period</code> to <code>infinity</code>. Note that more than <code>length</code> bytes can be returned. Returns <code>{more, binary()}</code> if there is more data to be read, and <code>{ok, binary()}</code> once the body is complete.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#feature/1" translate="no">feature(Feature)</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#req/2" translate="no">req(Client, Req)</a>
+        <div class="summary-synopsis">Determines whether a compile-time feature is available. Enable features by adding them to the environment variable <code>ERQWEST_FEATURES</code> (comma separated list) at build time.</div>
 
-        </div>
+    </div>
 
-          <div class="summary-synopsis"><p>Make a synchronous request.</p></div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#send/2" translate="no">send(Handle, Data)</a>
-
-        </div>
-
-          <div class="summary-synopsis">Stream a chunk of the request body. Returns <code>ok</code> once the chunk has successfully been queued for transmission. Note that due to buffering this does not mean that the chunk has actually been sent. Blocks once the internal buffer is full. Call <a href="#finish_send/1"><code>finish_send/1</code></a> once the body is complete. <code>{reply, resp()}</code> is returned if the server chooses to reply before the request body is complete.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#finish_send/1" translate="no">finish_send(Handle)</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#start_client/1" translate="no">start_client(Name)</a>
+        <div class="summary-synopsis">Complete sending the request body. Awaits the server's reply. Return values are as described for <a href="#req/2"><code>req/2</code></a>.</div>
 
-        </div>
+    </div>
 
-          <div class="summary-synopsis"><p>Equivalent to <a href="#start_client/2">start_client(Name, #{})</a>.</p></div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#start_client/2" translate="no">start_client(Name, Opts)</a>
-
-        </div>
-
-          <div class="summary-synopsis">Start a client registered under <code>Name</code>. The implementation uses <code>persistent_term</code> and is not intended for clients that will be frequently started and stopped. For such uses see <a href="#make_client/1"><code>make_client/1</code></a>.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get/2" translate="no">get(Client, Url)</a>
 
       </div>
 
-      <div class="summary-row">
-        <div class="summary-signature">
-          <a href="#stop_client/1" translate="no">stop_client(Name)</a>
+        <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
 
-        </div>
+    </div>
 
-          <div class="summary-synopsis">Unregisters and calls <a href="#close_client/1"><code>close_client/1</code></a> on a named client. This is potentially expensive and should not be called frequently, see <a href="#start_client/2"><code>start_client/2</code></a> for more details.</div>
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get/3" translate="no">get(Client, Url, Opts)</a>
 
       </div>
 
-  </div>
+        <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#make_client/0" translate="no">make_client()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Equivalent to <a href="#make_client/1">make_client(#{})</a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#make_client/1" translate="no">make_client(Opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis">Make a new client with its own connection pool. See also <a href="#start_client/2"><code>start_client/2</code></a>.</div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#patch/3" translate="no">patch(Client, Url, Opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#post/3" translate="no">post(Client, Url, Opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#put/3" translate="no">put(Client, Url, Opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis">Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.</div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#read/1" translate="no">read(Handle)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Equivalent to <a href="#read/2">read(Handle, #{})</a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#read/2" translate="no">read(Handle, Opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis">Read a chunk of the response body, waiting for at most <code>period</code> ms or until at least <code>length</code> bytes have been read. <code>length</code> defaults to 8 MB if omitted, and <code>period</code> to <code>infinity</code>. Note that more than <code>length</code> bytes can be returned. Returns <code>{more, binary()}</code> if there is more data to be read, and <code>{ok, binary()}</code> once the body is complete.</div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#req/2" translate="no">req(Client, Req)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Make a synchronous request.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#send/2" translate="no">send(Handle, Data)</a>
+
+      </div>
+
+        <div class="summary-synopsis">Stream a chunk of the request body. Returns <code>ok</code> once the chunk has successfully been queued for transmission. Note that due to buffering this does not mean that the chunk has actually been sent. Blocks once the internal buffer is full. Call <a href="#finish_send/1"><code>finish_send/1</code></a> once the body is complete. <code>{reply, resp()}</code> is returned if the server chooses to reply before the request body is complete.</div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_client/1" translate="no">start_client(Name)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Equivalent to <a href="#start_client/2">start_client(Name, #{})</a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_client/2" translate="no">start_client(Name, Opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis">Start a client registered under <code>Name</code>. The implementation uses <a href="https://www.erlang.org/doc/man/persistent_term.html"><code>persistent_term</code></a> and is not intended for clients that will be frequently started and stopped. For such uses see <a href="#make_client/1"><code>make_client/1</code></a>.</div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#stop_client/1" translate="no">stop_client(Name)</a>
+
+      </div>
+
+        <div class="summary-synopsis">Unregisters and calls <a href="#close_client/1"><code>close_client/1</code></a> on a named client. This is potentially expensive and should not be called frequently, see <a href="#start_client/2"><code>start_client/2</code></a> for more details.</div>
+
+    </div>
+
+</div>
 
   </section>
 
@@ -452,7 +452,7 @@ Types
     </a>
     <h1 class="signature" translate="no">client/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L34" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L34" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -464,10 +464,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">client()</pre>
+          <pre translate="no"><span class="attribute">-opaque</span> client()</pre>
 
       </div>
 
@@ -483,7 +482,7 @@ Types
     </a>
     <h1 class="signature" translate="no">client_opts/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L48" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L48" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -493,10 +492,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">client_opts() ::
+          <pre translate="no"><span class="attribute">-type</span> client_opts() ::
     #{identity => {Pkcs12Der :: binary(), Password :: binary()},
       follow_redirects => boolean() | non_neg_integer(),
       additional_root_certs => [CertDer :: binary()],
@@ -526,7 +524,7 @@ Types
     </a>
     <h1 class="signature" translate="no">err/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L85" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L85" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -536,10 +534,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">err() ::
+          <pre translate="no"><span class="attribute">-type</span> err() ::
     #{code := timeout | redirect | url | connect | request | body | cancelled | unknown,
       reason := binary()}.</pre>
 
@@ -557,7 +554,7 @@ Types
     </a>
     <h1 class="signature" translate="no">feature/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L88" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L88" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -567,10 +564,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">feature() :: cookies | gzip.</pre>
+          <pre translate="no"><span class="attribute">-type</span> feature() :: cookies | gzip.</pre>
 
       </div>
 
@@ -586,7 +582,7 @@ Types
     </a>
     <h1 class="signature" translate="no">handle/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L40" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L40" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -598,10 +594,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">handle()</pre>
+          <pre translate="no"><span class="attribute">-opaque</span> handle()</pre>
 
       </div>
 
@@ -617,7 +612,7 @@ Types
     </a>
     <h1 class="signature" translate="no">header/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L64" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L64" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -627,10 +622,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">header() :: {binary(), binary()}.</pre>
+          <pre translate="no"><span class="attribute">-type</span> header() :: {binary(), binary()}.</pre>
 
       </div>
 
@@ -646,7 +640,7 @@ Types
     </a>
     <h1 class="signature" translate="no">method/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L63" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L63" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -656,10 +650,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">method() :: options | get | post | put | delete | head | trace | connect | patch.</pre>
+          <pre translate="no"><span class="attribute">-type</span> method() :: options | get | post | put | delete | head | trace | connect | patch.</pre>
 
       </div>
 
@@ -675,7 +668,7 @@ Types
     </a>
     <h1 class="signature" translate="no">proxy_config/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L43" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L43" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -685,10 +678,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">proxy_config() :: [{http | https | all, <a href="#t:proxy_spec/0">proxy_spec</a>()}].</pre>
+          <pre translate="no"><span class="attribute">-type</span> proxy_config() :: [{http | https | all, <a href="#t:proxy_spec/0">proxy_spec</a>()}].</pre>
 
       </div>
 
@@ -704,7 +696,7 @@ Types
     </a>
     <h1 class="signature" translate="no">proxy_spec/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L44" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L44" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -714,10 +706,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">proxy_spec() :: #{url := binary(), basic_auth => {Username :: binary(), Password :: binary()}}.</pre>
+          <pre translate="no"><span class="attribute">-type</span> proxy_spec() :: #{url := binary(), basic_auth => {Username :: binary(), Password :: binary()}}.</pre>
 
       </div>
 
@@ -733,7 +724,7 @@ Types
     </a>
     <h1 class="signature" translate="no">read_opts/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L78" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L78" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -743,10 +734,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">read_opts() :: #{period => <a href="#t:timeout_ms/0">timeout_ms</a>(), length => pos_integer()}.</pre>
+          <pre translate="no"><span class="attribute">-type</span> read_opts() :: #{period => <a href="#t:timeout_ms/0">timeout_ms</a>(), length => pos_integer()}.</pre>
 
       </div>
 
@@ -762,7 +752,7 @@ Types
     </a>
     <h1 class="signature" translate="no">req_opts/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L65" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L65" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -772,10 +762,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">req_opts() ::
+          <pre translate="no"><span class="attribute">-type</span> req_opts() ::
     #{url := binary(),
       method := <a href="#t:method/0">method</a>(),
       headers => [<a href="#t:header/0">header</a>()],
@@ -797,7 +786,7 @@ Types
     </a>
     <h1 class="signature" translate="no">req_opts_optional/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L72" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L72" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -807,10 +796,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">req_opts_optional() ::
+          <pre translate="no"><span class="attribute">-type</span> req_opts_optional() ::
     #{headers => [<a href="#t:header/0">header</a>()],
       body => iodata() | stream,
       timeout => <a href="#t:timeout_ms/0">timeout_ms</a>(),
@@ -831,7 +819,7 @@ Types
     </a>
     <h1 class="signature" translate="no">resp/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L81" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L81" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -841,10 +829,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">resp() :: #{status := 100..599, body := binary() | <a href="#t:handle/0">handle</a>(), headers := [<a href="#t:header/0">header</a>()]}.</pre>
+          <pre translate="no"><span class="attribute">-type</span> resp() :: #{status := 100..599, body := binary() | <a href="#t:handle/0">handle</a>(), headers := [<a href="#t:header/0">header</a>()]}.</pre>
 
       </div>
 
@@ -860,7 +847,7 @@ Types
     </a>
     <h1 class="signature" translate="no">timeout_ms/0</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L47" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L47" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -870,10 +857,9 @@ Types
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">timeout_ms() :: non_neg_integer() | infinity.</pre>
+          <pre translate="no"><span class="attribute">-type</span> timeout_ms() :: non_neg_integer() | infinity.</pre>
 
       </div>
 
@@ -902,7 +888,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">cancel(Handle)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L240" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L240" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -912,10 +898,9 @@ Functions
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">cancel(<a href="#t:handle/0">handle</a>()) -> ok.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> cancel(<a href="#t:handle/0">handle</a>()) -> ok.</pre>
 
       </div>
 
@@ -931,7 +916,7 @@ Used to cancel streaming of a request or response body.
     </a>
     <h1 class="signature" translate="no">close_client(Client)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L125" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L125" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -941,10 +926,9 @@ Used to cancel streaming of a request or response body.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">close_client(<a href="#t:client/0">client</a>()) -> ok.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> close_client(<a href="#t:client/0">client</a>()) -> ok.</pre>
 
       </div>
 
@@ -960,7 +944,7 @@ Used to cancel streaming of a request or response body.
     </a>
     <h1 class="signature" translate="no">delete(Client, Url, Opts)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L272" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L272" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -970,10 +954,9 @@ Used to cancel streaming of a request or response body.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">delete(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
+          <pre translate="no"><span class="attribute">-spec</span> delete(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
           {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
@@ -990,7 +973,7 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
     </a>
     <h1 class="signature" translate="no">feature(Feature)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L102" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L102" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1000,10 +983,9 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">feature(<a href="#t:feature/0">feature</a>()) -> boolean().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> feature(<a href="#t:feature/0">feature</a>()) -> boolean().</pre>
 
       </div>
 
@@ -1019,7 +1001,7 @@ Determines whether a compile-time feature is available. Enable features by addin
     </a>
     <h1 class="signature" translate="no">finish_send(Handle)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L209" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L209" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1029,10 +1011,9 @@ Determines whether a compile-time feature is available. Enable features by addin
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">finish_send(<a href="#t:handle/0">handle</a>()) -> {ok, <a href="#t:resp/0">resp</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> finish_send(<a href="#t:handle/0">handle</a>()) -> {ok, <a href="#t:resp/0">resp</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
 
@@ -1048,7 +1029,7 @@ Complete sending the request body. Awaits the server's reply. Return values are 
     </a>
     <h1 class="signature" translate="no">get(Client, Url)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L248" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L248" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1058,10 +1039,9 @@ Complete sending the request body. Awaits the server's reply. Return values are 
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">get(<a href="#t:client/0">client</a>() | atom(), binary()) -> {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> get(<a href="#t:client/0">client</a>() | atom(), binary()) -> {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
 
@@ -1077,7 +1057,7 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
     </a>
     <h1 class="signature" translate="no">get(Client, Url, Opts)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L254" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L254" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1087,37 +1067,14 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">get(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
+          <pre translate="no"><span class="attribute">-spec</span> get(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
        {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
 
 Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
-  </section>
-</section>
-<section class="detail" id="get_client/1">
-
-  <div class="detail-header">
-    <a href="#get_client/1" class="detail-link" title="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature" translate="no">get_client(Client)</h1>
-
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L151" class="view-source" rel="help" title="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
   </section>
 </section>
 <section class="detail" id="make_client/0">
@@ -1129,7 +1086,7 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
     </a>
     <h1 class="signature" translate="no">make_client()</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L107" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L107" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1139,10 +1096,9 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">make_client() -> <a href="#t:client/0">client</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> make_client() -> <a href="#t:client/0">client</a>().</pre>
 
       </div>
 
@@ -1158,7 +1114,7 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
     </a>
     <h1 class="signature" translate="no">make_client(Opts)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L112" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L112" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1168,10 +1124,9 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">make_client(<a href="#t:client_opts/0">client_opts</a>()) -> <a href="#t:client/0">client</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> make_client(<a href="#t:client_opts/0">client_opts</a>()) -> <a href="#t:client/0">client</a>().</pre>
 
       </div>
 
@@ -1187,7 +1142,7 @@ Make a new client with its own connection pool. See also <a href="#start_client/
     </a>
     <h1 class="signature" translate="no">patch(Client, Url, Opts)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L278" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L278" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1197,10 +1152,9 @@ Make a new client with its own connection pool. See also <a href="#start_client/
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">patch(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
+          <pre translate="no"><span class="attribute">-spec</span> patch(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
          {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
@@ -1217,7 +1171,7 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
     </a>
     <h1 class="signature" translate="no">post(Client, Url, Opts)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L260" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L260" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1227,10 +1181,9 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">post(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
+          <pre translate="no"><span class="attribute">-spec</span> post(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
         {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
@@ -1247,7 +1200,7 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
     </a>
     <h1 class="signature" translate="no">put(Client, Url, Opts)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L266" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L266" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1257,10 +1210,9 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">put(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
+          <pre translate="no"><span class="attribute">-spec</span> put(<a href="#t:client/0">client</a>() | atom(), binary(), <a href="#t:req_opts_optional/0">req_opts_optional</a>()) ->
        {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
@@ -1277,7 +1229,7 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
     </a>
     <h1 class="signature" translate="no">read(Handle)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L219" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L219" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1287,10 +1239,9 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">read(<a href="#t:handle/0">handle</a>()) -> {more, binary()} | {ok, binary()} | {error, <a href="#t:err/0">err</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> read(<a href="#t:handle/0">handle</a>()) -> {more, binary()} | {ok, binary()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
 
@@ -1306,7 +1257,7 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
     </a>
     <h1 class="signature" translate="no">read(Handle, Opts)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L229" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L229" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1316,10 +1267,9 @@ Convenience wrapper for <a href="#req/2"><code>req/2</code></a>.
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">read(<a href="#t:handle/0">handle</a>(), map() | cancel) -> {more, binary()} | {ok, binary()} | {error, <a href="#t:err/0">err</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> read(<a href="#t:handle/0">handle</a>(), map() | cancel) -> {more, binary()} | {ok, binary()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
 
@@ -1335,7 +1285,7 @@ Read a chunk of the response body, waiting for at most <code>period</code> ms or
     </a>
     <h1 class="signature" translate="no">req(Client, Req)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L167" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L167" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1345,10 +1295,9 @@ Read a chunk of the response body, waiting for at most <code>period</code> ms or
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">req(<a href="#t:client/0">client</a>() | atom(), <a href="#t:req_opts/0">req_opts</a>()) -> {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> req(<a href="#t:client/0">client</a>() | atom(), <a href="#t:req_opts/0">req_opts</a>()) -> {ok, <a href="#t:resp/0">resp</a>()} | {handle, <a href="#t:handle/0">handle</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
 
@@ -1364,7 +1313,7 @@ Read a chunk of the response body, waiting for at most <code>period</code> ms or
     </a>
     <h1 class="signature" translate="no">send(Handle, Data)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L197" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L197" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1374,10 +1323,9 @@ Read a chunk of the response body, waiting for at most <code>period</code> ms or
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">send(<a href="#t:handle/0">handle</a>(), iodata()) -> ok | {reply, <a href="#t:resp/0">resp</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> send(<a href="#t:handle/0">handle</a>(), iodata()) -> ok | {reply, <a href="#t:resp/0">resp</a>()} | {error, <a href="#t:err/0">err</a>()}.</pre>
 
       </div>
 
@@ -1393,7 +1341,7 @@ Stream a chunk of the request body. Returns <code>ok</code> once the chunk has s
     </a>
     <h1 class="signature" translate="no">start_client(Name)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L130" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L130" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1403,10 +1351,9 @@ Stream a chunk of the request body. Returns <code>ok</code> once the chunk has s
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">start_client(atom()) -> ok.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> start_client(atom()) -> ok.</pre>
 
       </div>
 
@@ -1422,7 +1369,7 @@ Stream a chunk of the request body. Returns <code>ok</code> once the chunk has s
     </a>
     <h1 class="signature" translate="no">start_client(Name, Opts)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L137" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L137" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1432,14 +1379,13 @@ Stream a chunk of the request body. Returns <code>ok</code> once the chunk has s
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">start_client(atom(), <a href="#t:client_opts/0">client_opts</a>()) -> ok.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> start_client(atom(), <a href="#t:client_opts/0">client_opts</a>()) -> ok.</pre>
 
       </div>
 
-Start a client registered under <code>Name</code>. The implementation uses <code>persistent_term</code> and is not intended for clients that will be frequently started and stopped. For such uses see <a href="#make_client/1"><code>make_client/1</code></a>.
+Start a client registered under <code>Name</code>. The implementation uses <a href="https://www.erlang.org/doc/man/persistent_term.html"><code>persistent_term</code></a> and is not intended for clients that will be frequently started and stopped. For such uses see <a href="#make_client/1"><code>make_client/1</code></a>.
   </section>
 </section>
 <section class="detail" id="stop_client/1">
@@ -1451,7 +1397,7 @@ Start a client registered under <code>Name</code>. The implementation uses <code
     </a>
     <h1 class="signature" translate="no">stop_client(Name)</h1>
 
-      <a href="https://github.com/dlesl/erqwest/blob/v0.2.2/src/erqwest.erl#L145" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/dlesl/erqwest/blob/v0.2.3/src/erqwest.erl#L145" class="icon-action" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1461,10 +1407,9 @@ Start a client registered under <code>Name</code>. The implementation uses <code
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre translate="no">stop_client(atom()) -> ok.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> stop_client(atom()) -> ok.</pre>
 
       </div>
 
@@ -1476,27 +1421,35 @@ Unregisters and calls <a href="#close_client/1"><code>close_client/1</code></a> 
   </section>
 
       <footer class="footer">
-
-          <p>
-            On Hex.pm:
+        <p>
 
             <span class="line">
-              <a href="https://hex.pm/packages/erqwest/0.2.2" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/erqwest/0.2.2" class="line">Preview</a>
+              <a href="https://hex.pm/packages/erqwest/0.2.3" class="footer-hex-package">Hex Package</a>
 
-                <a href="https://preview.hex.pm/preview/erqwest/0.2.2/show/src/erqwest.erl">(current file)</a>
+              <a href="https://preview.hex.pm/preview/erqwest/0.2.3">Hex Preview</a>
+
+                (<a href="https://preview.hex.pm/preview/erqwest/0.2.3/show/src/erqwest.erl">current file</a>)
 
             </span>
 
-            <button class="line footer-button display-quick-switch">
-              Search
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+              Search HexDocs
             </button>
-          </p>
 
-        <p>
+              <a href="erqwest.epub" title="ePub version">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.27.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.29.1) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
         </p>
       </footer>
     </div>
