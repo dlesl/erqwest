@@ -1,0 +1,19 @@
+FROM erlang:25-alpine
+
+WORKDIR /app
+
+RUN apk add build-base pkgconfig openssl-dev cargo
+
+COPY ./rebar.config .
+COPY ./rebar.lock .
+COPY ./native/ ./native
+COPY ./src ./src
+
+RUN rebar3 compile
+
+RUN ERL_LIBS="$(rebar3 path --lib -s ":")" \
+	erl -noshell -eval ' \
+application:start(erqwest), \
+erqwest:start_client(c), \
+io:format("~p~n", [erqwest:get(c, <<"https://httpbin.org/get">>)]), \
+init:stop(0).'

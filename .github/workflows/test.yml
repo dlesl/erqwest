@@ -22,3 +22,8 @@ jobs:
         name: ct-logs
         path: _build/test/logs
         retention-days: 5
+  docker_smoke_tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.3.4
+    - run: make docker-smoke-tests
