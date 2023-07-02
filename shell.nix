@@ -9,7 +9,7 @@ pkgs.mkShell {
       rustfmt
       openssl
       pkgconfig
-    ] ++ (with beam.packages.erlangR25;
+    ] ++ (with beam.packages.erlangR26;
       [
         erlang
         rebar3
