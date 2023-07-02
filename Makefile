@@ -11,7 +11,7 @@ ct:
 	CARGO_PROFILE=debug rebar3 ct
 
 dialyzer:
-	CARGO_PROFILE=debug rebar3 as test dialyzer
+	CARGO_PROFILE=debug rebar3 dialyzer
 
 docs:
 	CARGO_PROFILE=debug rebar3 ex_doc
